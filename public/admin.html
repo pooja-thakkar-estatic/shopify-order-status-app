@@ -30,10 +30,41 @@
 </head>
 <body>
   <div class="tabs">
-    <button class="tab-btn active" id="tab-status-mgmt">Order Status Management</button>
-    <button class="tab-btn" id="tab-status-log">Status Log</button>
+    <button class="tab-btn active" id="tab-status-log">Status Log</button>
+    <button class="tab-btn" id="tab-status-mgmt">Order Status Management</button>
   </div>
-  <div id="tab-content-status-mgmt" class="tab-content">
+  <div id="tab-content-status-log" class="tab-content">
+    <h2>Status Log</h2>
+    <div style="margin-bottom: 16px;">
+      <label for="statusFilter">Filter by Status: </label>
+      <select id="statusFilter">
+        <option value="">All</option>
+      </select>
+    </div>
+    <table id="orderLogTable">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Flags</th>
+          <th>Date</th>
+          <th>Customer</th>
+          <th>Total</th>
+          <th>Payment status</th>
+          <th>Fulfillment status</th>
+          <th>Tags</th>
+          <th>Items</th>
+          <th>Delivery method</th>
+          <th>Channel</th>
+          <th>Customer Email</th>
+          <th>Current Status</th>
+          <th>Add Status</th>
+          <th>Save</th>
+        </tr>
+      </thead>
+      <tbody id="orderLogBody"></tbody>
+    </table>
+  </div>
+  <div id="tab-content-status-mgmt" class="tab-content" style="display:none;">
     <h2>Order Status Management</h2>
     <div class="status-form">
       <h4>Add / Edit Status</h4>
@@ -93,31 +124,6 @@
         </tr>
       </thead>
       <tbody id="statusesTable"></tbody>
-    </table>
-  </div>
-  <div id="tab-content-status-log" class="tab-content" style="display:none;">
-    <h2>Status Log</h2>
-    <table id="orderLogTable">
-      <thead>
-        <tr>
-          <th>Order</th>
-          <th>Flags</th>
-          <th>Date</th>
-          <th>Customer</th>
-          <th>Total</th>
-          <th>Payment status</th>
-          <th>Fulfillment status</th>
-          <th>Tags</th>
-          <th>Items</th>
-          <th>Delivery method</th>
-          <th>Channel</th>
-          <th>Customer Email</th>
-          <th>Current Status</th>
-          <th>Add Status</th>
-          <th>Save</th>
-        </tr>
-      </thead>
-      <tbody id="orderLogBody"></tbody>
     </table>
   </div>
   <script>
@@ -240,14 +246,21 @@
         return data;
       });
     }
+    function populateStatusFilter() {
+      const filter = document.getElementById('statusFilter');
+      filter.innerHTML = '<option value="">All</option>' + allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
+    }
     function fetchOrdersAndRender() {
       fetchAllStatuses().then(() => {
+        populateStatusFilter();
         fetch('/api/orders').then(r => r.json()).then(orders => {
+          const filterVal = document.getElementById('statusFilter').value;
           const tbody = document.getElementById('orderLogBody');
           tbody.innerHTML = '';
-          orders.forEach(order => {
+          orders.filter(order => !filterVal || order.status === filterVal).forEach(order => {
             const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}" ${order.status===s.orderStatus?'selected':''}>${s.orderStatus}</option>`).join('');
             const items = (order.line_items||order.items||[]).map(i => `${i.quantity}x ${i.title||i.name}`).join('<br>');
+            const tags = Array.isArray(order.tags) ? order.tags.join(', ') : (order.tags || '');
             tbody.innerHTML += `
               <tr>
                 <td>${order.name||order.id}</td>
@@ -257,9 +270,9 @@
                 <td>${order.total_price||''}</td>
                 <td>${order.financial_status||order.payment_status||''}</td>
                 <td>${order.fulfillment_status||''}</td>
-                <td>${(order.tags||[]).join ? order.tags.join(', ') : order.tags||''}</td>
+                <td>${tags}</td>
                 <td>${items}</td>
-                <td>${order.delivery_method||order.shipping_lines?.map(s=>s.title).join(', ')||''}</td>
+                <td>${order.delivery_method||((order.shipping_lines||[]).map(s=>s.title).join(', '))||''}</td>
                 <td>${order.source_name||order.channel||''}</td>
                 <td>${order.email||''}</td>
                 <td>${order.status ? `<span style='background:${colorMap[allStatuses.find(s=>s.orderStatus===order.status)?.color]||'#eee'};padding:2px 8px;border-radius:4px;'>${order.status}</span>` : '<em>None</em>'}</td>
@@ -304,19 +317,20 @@
     // setInterval(fetchOrdersAndRender, 5*60*1000);
 
     // Tab logic
+    document.getElementById('tab-status-log').onclick = function() {
+      this.classList.add('active');
+      document.getElementById('tab-status-mgmt').classList.remove('active');
+      document.getElementById('tab-content-status-log').style.display = '';
+      document.getElementById('tab-content-status-mgmt').style.display = 'none';
+      fetchOrdersAndRender();
+    };
     document.getElementById('tab-status-mgmt').onclick = function() {
       this.classList.add('active');
       document.getElementById('tab-status-log').classList.remove('active');
       document.getElementById('tab-content-status-mgmt').style.display = '';
       document.getElementById('tab-content-status-log').style.display = 'none';
     };
-    document.getElementById('tab-status-log').onclick = function() {
-      this.classList.add('active');
-      document.getElementById('tab-status-mgmt').classList.remove('active');
-      document.getElementById('tab-content-status-mgmt').style.display = 'none';
-      document.getElementById('tab-content-status-log').style.display = '';
-      fetchOrdersAndRender();
-    };
+    document.getElementById('statusFilter').onchange = fetchOrdersAndRender;
   </script>
 </body>
 </html> 
