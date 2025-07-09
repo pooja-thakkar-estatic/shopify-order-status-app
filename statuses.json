@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "orderStatus": "Order Submitted",
+    "color": "blue",
+    "description": "Order has been submitted by the customer.",
+    "topContent": "Your order has been successfully submitted on the Uniform7 Website. Your order number is {ORDER_NUMBER}.",
+    "bottomContent": "Shop Opening Times, Customer Service, address, contact information, email, telephone, whatsapp, booking links, faq, customer notice board, planned closures, special events and confirmation of our working days this month.",
+    "emailCustomer": true,
+    "emailStaff": ""
+  },
+  {
+    "id": 2,
+    "orderStatus": "Order Received",
+    "color": "green",
+    "description": "Order has been received and is being processed.",
+    "topContent": "Your order has now been picked up by our team and is in the queue for picking.",
+    "bottomContent": "We are currently working within a preparation guide time up to 10 working days. Your order will be dispatched by (INSERT DATE).",
+    "emailCustomer": true,
+    "emailStaff": ""
+  },
+  {
+    "id": 3,
+    "orderStatus": "Returns Approved",
+    "color": "yellow",
+    "description": "Return request has been approved.",
+    "topContent": "We have received your request to return your unwanted goods. Your return has now been authorized.",
+    "bottomContent": "Please use returns code: {RETURNS_CODE}.",
+    "emailCustomer": true,
+    "emailStaff": ""
+  },
+  {
+    "id": 4,
+    "orderStatus": "Returns Declined",
+    "color": "red",
+    "description": "Return request has been declined.",
+    "topContent": "We have received your request to return your unwanted goods. Unfortunately, we are unable to authorize this return.",
+    "bottomContent": "Contact customer service for more information.",
+    "emailCustomer": true,
+    "emailStaff": "rachael.richards@uniform7.co.uk"
+  },
+  {
+    "id": 5,
+    "orderStatus": "Ready to Collect - Shop",
+    "color": "light blue",
+    "description": "Order is ready for collection at the shop.",
+    "topContent": "Your order is now ready to collect from the shop.",
+    "bottomContent": "Please bring your order confirmation when collecting.",
+    "emailCustomer": true,
+    "emailStaff": ""
+  },
+  {
+    "id": 6,
+    "orderStatus": "Order Completed",
+    "color": "light green",
+    "description": "Order has been completed.",
+    "topContent": "Your order is now complete.",
+    "bottomContent": "Thank you for shopping with Uniform7!",
+    "emailCustomer": false,
+    "emailStaff": ""
+  },
+  {
+    "id": 7,
+    "orderStatus": "Order Cancelled",
+    "color": "light pink",
+    "description": "Order has been cancelled.",
+    "topContent": "Your order has been cancelled as per your request.",
+    "bottomContent": "If you have any questions, please contact customer service.",
+    "emailCustomer": true,
+    "emailStaff": ""
+  }
+] 
