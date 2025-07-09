@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <title>Order Status Admin</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; background: #f7f7f7; }
+    body { font-family: Arial, sans-serif; max-width: 90vw; width: 90%; margin: 40px auto; background: #f7f7f7; }
+    .tabs { display: flex; margin-bottom: 24px; }
+    .tab-btn { padding: 10px 24px; border: none; background: #eee; cursor: pointer; font-size: 16px; border-radius: 8px 8px 0 0; margin-right: 2px; }
+    .tab-btn.active { background: #fff; border-bottom: 2px solid #007bff; color: #007bff; }
+    .tab-content { background: #fff; padding: 18px; border-radius: 0 8px 8px 8px; box-shadow: 0 2px 8px #eee; }
     h2 { color: #333; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
     th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: left; }
@@ -25,66 +29,97 @@
   </style>
 </head>
 <body>
-  <h2>Order Status Management</h2>
-  <div class="status-form">
-    <h4>Add / Edit Status</h4>
-    <form id="statusForm">
-      <div class="form-row">
-        <label for="orderStatus">Order Status</label>
-        <input type="text" id="orderStatus" required />
-      </div>
-      <div class="form-row">
-        <label for="color">Color</label>
-        <select id="color" required>
-          <option value="red">Red</option>
-          <option value="green">Green</option>
-          <option value="yellow">Yellow</option>
-          <option value="blue">Blue</option>
-          <option value="light blue">Light Blue</option>
-          <option value="light green">Light Green</option>
-          <option value="light pink">Light Pink</option>
-        </select>
-        <span id="colorPreview" class="color-box" style="background: red;"></span>
-      </div>
-      <div class="form-row">
-        <label for="description">Description</label>
-        <input type="text" id="description" />
-      </div>
-      <div class="form-row">
-        <label for="topContent">Top Content</label>
-        <textarea id="topContent"></textarea>
-      </div>
-      <div class="form-row">
-        <label for="bottomContent">Bottom Content</label>
-        <textarea id="bottomContent"></textarea>
-      </div>
-      <div class="form-row">
-        <label class="checkbox-label" for="emailCustomer">Email Customer?</label>
-        <input type="checkbox" id="emailCustomer" />
-      </div>
-      <div class="form-row">
-        <label for="emailStaff">Email Staff</label>
-        <input type="text" id="emailStaff" placeholder="staff@email.com (optional)" />
-      </div>
-      <input type="hidden" id="statusId" />
-      <button type="submit" class="btn" id="saveBtn">Add Status</button>
-      <button type="button" class="btn" id="cancelEdit" style="display:none;">Cancel</button>
-    </form>
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-status-mgmt">Order Status Management</button>
+    <button class="tab-btn" id="tab-status-log">Status Log</button>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Status</th>
-        <th>Color</th>
-        <th>Description</th>
-        <th>Email Customer?</th>
-        <th>Email Staff</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="statusesTable"></tbody>
-  </table>
+  <div id="tab-content-status-mgmt" class="tab-content">
+    <h2>Order Status Management</h2>
+    <div class="status-form">
+      <h4>Add / Edit Status</h4>
+      <form id="statusForm">
+        <div class="form-row">
+          <label for="orderStatus">Order Status</label>
+          <input type="text" id="orderStatus" required />
+        </div>
+        <div class="form-row">
+          <label for="color">Color</label>
+          <select id="color" required>
+            <option value="red">Red</option>
+            <option value="green">Green</option>
+            <option value="yellow">Yellow</option>
+            <option value="blue">Blue</option>
+            <option value="light blue">Light Blue</option>
+            <option value="light green">Light Green</option>
+            <option value="light pink">Light Pink</option>
+          </select>
+          <span id="colorPreview" class="color-box" style="background: red;"></span>
+        </div>
+        <div class="form-row">
+          <label for="description">Description</label>
+          <input type="text" id="description" />
+        </div>
+        <div class="form-row">
+          <label for="topContent">Top Content</label>
+          <textarea id="topContent"></textarea>
+        </div>
+        <div class="form-row">
+          <label for="bottomContent">Bottom Content</label>
+          <textarea id="bottomContent"></textarea>
+        </div>
+        <div class="form-row">
+          <label class="checkbox-label" for="emailCustomer">Email Customer?</label>
+          <input type="checkbox" id="emailCustomer" />
+        </div>
+        <div class="form-row">
+          <label for="emailStaff">Email Staff</label>
+          <input type="text" id="emailStaff" placeholder="staff@email.com (optional)" />
+        </div>
+        <input type="hidden" id="statusId" />
+        <button type="submit" class="btn" id="saveBtn">Add Status</button>
+        <button type="button" class="btn" id="cancelEdit" style="display:none;">Cancel</button>
+      </form>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Status</th>
+          <th>Color</th>
+          <th>Description</th>
+          <th>Email Customer?</th>
+          <th>Email Staff</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="statusesTable"></tbody>
+    </table>
+  </div>
+  <div id="tab-content-status-log" class="tab-content" style="display:none;">
+    <h2>Status Log</h2>
+    <table id="orderLogTable">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Flags</th>
+          <th>Date</th>
+          <th>Customer</th>
+          <th>Total</th>
+          <th>Payment status</th>
+          <th>Fulfillment status</th>
+          <th>Tags</th>
+          <th>Items</th>
+          <th>Delivery method</th>
+          <th>Channel</th>
+          <th>Customer Email</th>
+          <th>Current Status</th>
+          <th>Add Status</th>
+          <th>Save</th>
+        </tr>
+      </thead>
+      <tbody id="orderLogBody"></tbody>
+    </table>
+  </div>
   <script>
     const colorMap = {
       'red': '#dc3545',
@@ -179,24 +214,24 @@
     // --- ORDER STATUS LOG SECTION ---
     // Add after status management
     // HTML for order log
-    const orderLogSection = document.createElement('div');
-    orderLogSection.innerHTML = `
-      <h2>Status Log</h2>
-      <table id="orderLogTable">
-        <thead>
-          <tr>
-            <th>Order #</th>
-            <th>Customer Email</th>
-            <th>Customer Name</th>
-            <th>Current Status</th>
-            <th>Add Status</th>
-            <th>Save</th>
-          </tr>
-        </thead>
-        <tbody id="orderLogBody"></tbody>
-      </table>
-    `;
-    document.body.appendChild(orderLogSection);
+    // const orderLogSection = document.createElement('div');
+    // orderLogSection.innerHTML = `
+    //   <h2>Status Log</h2>
+    //   <table id="orderLogTable">
+    //     <thead>
+    //       <tr>
+    //         <th>Order #</th>
+    //         <th>Customer Email</th>
+    //         <th>Customer Name</th>
+    //         <th>Current Status</th>
+    //         <th>Add Status</th>
+    //         <th>Save</th>
+    //       </tr>
+    //     </thead>
+    //     <tbody id="orderLogBody"></tbody>
+    //   </table>
+    // `;
+    // document.body.appendChild(orderLogSection);
 
     let allStatuses = [];
     function fetchAllStatuses() {
@@ -212,11 +247,21 @@
           tbody.innerHTML = '';
           orders.forEach(order => {
             const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}" ${order.status===s.orderStatus?'selected':''}>${s.orderStatus}</option>`).join('');
+            const items = (order.line_items||order.items||[]).map(i => `${i.quantity}x ${i.title||i.name}`).join('<br>');
             tbody.innerHTML += `
               <tr>
-                <td>${order.name}</td>
-                <td>${order.email||''}</td>
+                <td>${order.name||order.id}</td>
+                <td>${order.flags||''}</td>
+                <td>${order.created_at ? new Date(order.created_at).toLocaleString() : ''}</td>
                 <td>${order.customer||''}</td>
+                <td>${order.total_price||''}</td>
+                <td>${order.financial_status||order.payment_status||''}</td>
+                <td>${order.fulfillment_status||''}</td>
+                <td>${(order.tags||[]).join ? order.tags.join(', ') : order.tags||''}</td>
+                <td>${items}</td>
+                <td>${order.delivery_method||order.shipping_lines?.map(s=>s.title).join(', ')||''}</td>
+                <td>${order.source_name||order.channel||''}</td>
+                <td>${order.email||''}</td>
                 <td>${order.status ? `<span style='background:${colorMap[allStatuses.find(s=>s.orderStatus===order.status)?.color]||'#eee'};padding:2px 8px;border-radius:4px;'>${order.status}</span>` : '<em>None</em>'}</td>
                 <td>
                   <select id="status-select-${order.id}">
@@ -257,6 +302,21 @@
     fetchOrdersAndRender();
     // Optionally, refresh every few minutes
     // setInterval(fetchOrdersAndRender, 5*60*1000);
+
+    // Tab logic
+    document.getElementById('tab-status-mgmt').onclick = function() {
+      this.classList.add('active');
+      document.getElementById('tab-status-log').classList.remove('active');
+      document.getElementById('tab-content-status-mgmt').style.display = '';
+      document.getElementById('tab-content-status-log').style.display = 'none';
+    };
+    document.getElementById('tab-status-log').onclick = function() {
+      this.classList.add('active');
+      document.getElementById('tab-status-mgmt').classList.remove('active');
+      document.getElementById('tab-content-status-mgmt').style.display = 'none';
+      document.getElementById('tab-content-status-log').style.display = '';
+      fetchOrdersAndRender();
+    };
   </script>
 </body>
 </html> 
