@@ -35,11 +35,12 @@
   </div>
   <div id="tab-content-status-log" class="tab-content">
     <h2>Status Log</h2>
-    <div style="margin-bottom: 16px;">
+    <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 24px;">
       <label for="statusFilter">Filter by Status: </label>
       <select id="statusFilter">
         <option value="">All</option>
       </select>
+      <input type="text" id="orderSearch" placeholder="Search orders..." style="padding: 6px; width: 240px;" />
     </div>
     <table id="orderLogTable">
       <thead>
@@ -56,13 +57,14 @@
           <th>Delivery method</th>
           <th>Channel</th>
           <th>Customer Email</th>
-          <th>Current Status</th>
+          <th>Order Statuses</th>
           <th>Add Status</th>
           <th>Save</th>
         </tr>
       </thead>
       <tbody id="orderLogBody"></tbody>
     </table>
+    <div id="pagination" style="margin-top: 16px; text-align: right;"></div>
   </div>
   <div id="tab-content-status-mgmt" class="tab-content" style="display:none;">
     <h2>Order Status Management</h2>
@@ -246,49 +248,87 @@
         return data;
       });
     }
+    let allOrders = [];
+    let currentPage = 1;
+    const pageSize = 20;
     function populateStatusFilter() {
       const filter = document.getElementById('statusFilter');
       filter.innerHTML = '<option value="">All</option>' + allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
+    }
+    function renderOrders(orders) {
+      const filterVal = document.getElementById('statusFilter').value;
+      const searchVal = document.getElementById('orderSearch').value.toLowerCase();
+      let filtered = orders.filter(order =>
+        (!filterVal || (order.order_statuses||[]).includes(filterVal)) &&
+        (
+          !searchVal ||
+          (order.name && order.name.toLowerCase().includes(searchVal)) ||
+          (order.customer && order.customer.toLowerCase().includes(searchVal)) ||
+          (order.email && order.email.toLowerCase().includes(searchVal))
+        )
+      );
+      const totalPages = Math.ceil(filtered.length / pageSize);
+      if (currentPage > totalPages) currentPage = totalPages || 1;
+      const pagedOrders = filtered.slice((currentPage-1)*pageSize, currentPage*pageSize);
+      const tbody = document.getElementById('orderLogBody');
+      tbody.innerHTML = '';
+      pagedOrders.forEach(order => {
+        const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
+        const items = (order.line_items||order.items||[]).map(i => `${i.quantity}x ${i.title||i.name}`).join('<br>');
+        const tags = Array.isArray(order.tags) ? order.tags.join(', ') : (order.tags || '');
+        const statusesBox = (order.order_statuses||[]).map(statusName => {
+          const statusObj = allStatuses.find(s => s.orderStatus === statusName);
+          const color = statusObj ? colorMap[statusObj.color] : '#eee';
+          return `<span style="background:${color};padding:2px 8px;border-radius:4px;margin-right:4px;">${statusName}</span>`;
+        }).join('');
+        tbody.innerHTML += `
+          <tr>
+            <td>${order.name||order.id}</td>
+            <td>${order.flags||''}</td>
+            <td>${order.created_at ? new Date(order.created_at).toLocaleString() : ''}</td>
+            <td>${order.customer||''}</td>
+            <td>${order.total_price||''}</td>
+            <td>${order.financial_status||order.payment_status||''}</td>
+            <td>${order.fulfillment_status||''}</td>
+            <td>${tags}</td>
+            <td>${items}</td>
+            <td>${order.delivery_method||((order.shipping_lines||[]).map(s=>s.title).join(', '))||''}</td>
+            <td>${order.source_name||order.channel||''}</td>
+            <td>${order.email||''}</td>
+            <td>${statusesBox||'<em>None</em>'}</td>
+            <td>
+              <select id="status-select-${order.id}">
+                <option value="">Select Status</option>
+                ${statusOptions}
+              </select>
+            </td>
+            <td><button class="btn" onclick="saveOrderStatus('${order.id}')">Save</button></td>
+          </tr>
+        `;
+      });
+      // Pagination controls
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+      if (totalPages > 1) {
+        pagination.innerHTML =
+          `<button onclick="prevPage()" ${currentPage===1?'disabled':''}>Prev</button> ` +
+          `Page ${currentPage} of ${totalPages} ` +
+          `<button onclick="nextPage()" ${currentPage===totalPages?'disabled':''}>Next</button>`;
+      }
     }
     function fetchOrdersAndRender() {
       fetchAllStatuses().then(() => {
         populateStatusFilter();
         fetch('/api/orders').then(r => r.json()).then(orders => {
-          const filterVal = document.getElementById('statusFilter').value;
-          const tbody = document.getElementById('orderLogBody');
-          tbody.innerHTML = '';
-          orders.filter(order => !filterVal || order.status === filterVal).forEach(order => {
-            const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}" ${order.status===s.orderStatus?'selected':''}>${s.orderStatus}</option>`).join('');
-            const items = (order.line_items||order.items||[]).map(i => `${i.quantity}x ${i.title||i.name}`).join('<br>');
-            const tags = Array.isArray(order.tags) ? order.tags.join(', ') : (order.tags || '');
-            tbody.innerHTML += `
-              <tr>
-                <td>${order.name||order.id}</td>
-                <td>${order.flags||''}</td>
-                <td>${order.created_at ? new Date(order.created_at).toLocaleString() : ''}</td>
-                <td>${order.customer||''}</td>
-                <td>${order.total_price||''}</td>
-                <td>${order.financial_status||order.payment_status||''}</td>
-                <td>${order.fulfillment_status||''}</td>
-                <td>${tags}</td>
-                <td>${items}</td>
-                <td>${order.delivery_method||((order.shipping_lines||[]).map(s=>s.title).join(', '))||''}</td>
-                <td>${order.source_name||order.channel||''}</td>
-                <td>${order.email||''}</td>
-                <td>${order.status ? `<span style='background:${colorMap[allStatuses.find(s=>s.orderStatus===order.status)?.color]||'#eee'};padding:2px 8px;border-radius:4px;'>${order.status}</span>` : '<em>None</em>'}</td>
-                <td>
-                  <select id="status-select-${order.id}">
-                    <option value="">Select Status</option>
-                    ${statusOptions}
-                  </select>
-                </td>
-                <td><button class="btn" onclick="saveOrderStatus('${order.id}')">Save</button></td>
-              </tr>
-            `;
-          });
+          allOrders = orders;
+          renderOrders(allOrders);
         });
       });
     }
+    function prevPage() { if (currentPage > 1) { currentPage--; renderOrders(allOrders); } }
+    function nextPage() { const totalPages = Math.ceil(allOrders.length / pageSize); if (currentPage < totalPages) { currentPage++; renderOrders(allOrders); } }
+    document.getElementById('statusFilter').onchange = function() { currentPage = 1; renderOrders(allOrders); };
+    document.getElementById('orderSearch').oninput = function() { currentPage = 1; renderOrders(allOrders); };
     window.saveOrderStatus = function(orderId) {
       const sel = document.getElementById(`status-select-${orderId}`);
       const status = sel.value;
@@ -330,7 +370,6 @@
       document.getElementById('tab-content-status-mgmt').style.display = '';
       document.getElementById('tab-content-status-log').style.display = 'none';
     };
-    document.getElementById('statusFilter').onchange = fetchOrdersAndRender;
   </script>
 </body>
 </html> 

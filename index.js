@@ -166,28 +166,37 @@ function shopifyRequest(method, endpoint, data) {
   });
 }
 
-// GET /api/orders - fetch all orders with custom status metafield
+// GET /api/orders - fetch all orders with custom status metafield and all details
 app.get('/api/orders', async (req, res) => {
   try {
     // Fetch orders (limit 50 for demo)
     const resp = await shopifyRequest('get', '/orders.json?limit=50&status=any');
     const orders = resp.data.orders;
-    // For each order, get custom status metafield (namespace: 'uniform7', key: 'order_status')
+    // For each order, get custom status metafield (namespace: 'uniform7', key: 'order_statuses')
     const ordersWithStatus = await Promise.all(orders.map(async (order) => {
-      let status = '';
+      let statusesArr = [];
       try {
         const metafieldsResp = await shopifyRequest('get', `/orders/${order.id}/metafields.json`);
-        const statusField = metafieldsResp.data.metafields.find(mf => mf.namespace === 'uniform7' && mf.key === 'order_status');
-        status = statusField ? statusField.value : '';
+        const statusField = metafieldsResp.data.metafields.find(mf => mf.namespace === 'uniform7' && mf.key === 'order_statuses');
+        if (statusField) {
+          statusesArr = JSON.parse(statusField.value);
+        }
       } catch (e) {}
       return {
         id: order.id,
         name: order.name,
         email: order.email,
-        customer: order.customer ? (order.customer.first_name + ' ' + order.customer.last_name) : '',
-        status,
+        customer: order.customer ? [order.customer.first_name, order.customer.last_name].filter(Boolean).join(' ') : '',
         created_at: order.created_at,
         total_price: order.total_price,
+        financial_status: order.financial_status,
+        fulfillment_status: order.fulfillment_status,
+        tags: Array.isArray(order.tags) ? order.tags : (order.tags ? order.tags.split(',').map(t => t.trim()) : []),
+        line_items: order.line_items || [],
+        shipping_lines: order.shipping_lines || [],
+        source_name: order.source_name || '',
+        channel: order.source_name || '',
+        order_statuses: statusesArr,
       };
     }));
     res.json(ordersWithStatus);
@@ -197,19 +206,30 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
-// POST /api/orders/:id/status - update order status metafield and send email
+// POST /api/orders/:id/status - append new status to order_statuses array and send email
 app.post('/api/orders/:id/status', async (req, res) => {
   const orderId = req.params.id;
   const { status } = req.body;
   if (!status) return res.status(400).json({ error: 'Missing status' });
   try {
-    // Update metafield
+    // Fetch existing statuses
+    let statusesArr = [];
+    try {
+      const metafieldsResp = await shopifyRequest('get', `/orders/${orderId}/metafields.json`);
+      const statusField = metafieldsResp.data.metafields.find(mf => mf.namespace === 'uniform7' && mf.key === 'order_statuses');
+      if (statusField) {
+        statusesArr = JSON.parse(statusField.value);
+      }
+    } catch (e) {}
+    // Add new status if not already present
+    if (!statusesArr.includes(status)) statusesArr.push(status);
+    // Save back as JSON string
     await shopifyRequest('post', `/orders/${orderId}/metafields.json`, {
       metafield: {
         namespace: 'uniform7',
-        key: 'order_status',
-        value: status,
-        type: 'single_line_text_field',
+        key: 'order_statuses',
+        value: JSON.stringify(statusesArr),
+        type: 'json_string',
       }
     });
     // Fetch order details for email
