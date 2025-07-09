@@ -260,7 +260,7 @@ app.post('/api/orders/:id/status', async (req, res) => {
 
 // Admin UI (simple HTML page)
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'yourStrongPassword';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 
 function adminAuth(req, res, next) {
   const user = basicAuth(req);
