@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('express');                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
@@ -7,6 +7,8 @@ const PORT = process.env.PORT || 3000;
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 const { orderStatusEmail } = require('./emailTemplates');
+const axios = require('axios');
+const basicAuth = require('basic-auth');
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -145,8 +147,131 @@ app.post('/webhook/order-updated', async (req, res) => {
   }
 });
 
+// Shopify API helper
+const SHOP = process.env.SHOPIFY_SHOP;
+const API_KEY = process.env.SHOPIFY_API_KEY;
+const API_SECRET = process.env.SHOPIFY_API_SECRET;
+const ADMIN_API_VERSION = '2023-10'; // or latest supported
+const ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN || process.env.SHOPIFY_ACCESS_TOKEN;
+
+function shopifyRequest(method, endpoint, data) {
+  return axios({
+    method,
+    url: `https://${SHOP}/admin/api/${ADMIN_API_VERSION}${endpoint}`,
+    headers: {
+      'X-Shopify-Access-Token': ACCESS_TOKEN,
+      'Content-Type': 'application/json',
+    },
+    data,
+  });
+}
+
+// GET /api/orders - fetch all orders with custom status metafield
+app.get('/api/orders', async (req, res) => {
+  try {
+    // Fetch orders (limit 50 for demo)
+    const resp = await shopifyRequest('get', '/orders.json?limit=50&status=any');
+    const orders = resp.data.orders;
+    // For each order, get custom status metafield (namespace: 'uniform7', key: 'order_status')
+    const ordersWithStatus = await Promise.all(orders.map(async (order) => {
+      let status = '';
+      try {
+        const metafieldsResp = await shopifyRequest('get', `/orders/${order.id}/metafields.json`);
+        const statusField = metafieldsResp.data.metafields.find(mf => mf.namespace === 'uniform7' && mf.key === 'order_status');
+        status = statusField ? statusField.value : '';
+      } catch (e) {}
+      return {
+        id: order.id,
+        name: order.name,
+        email: order.email,
+        customer: order.customer ? (order.customer.first_name + ' ' + order.customer.last_name) : '',
+        status,
+        created_at: order.created_at,
+        total_price: order.total_price,
+      };
+    }));
+    res.json(ordersWithStatus);
+  } catch (err) {
+    console.error('Fetch orders error:', err.response?.data || err);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// POST /api/orders/:id/status - update order status metafield and send email
+app.post('/api/orders/:id/status', async (req, res) => {
+  const orderId = req.params.id;
+  const { status } = req.body;
+  if (!status) return res.status(400).json({ error: 'Missing status' });
+  try {
+    // Update metafield
+    await shopifyRequest('post', `/orders/${orderId}/metafields.json`, {
+      metafield: {
+        namespace: 'uniform7',
+        key: 'order_status',
+        value: status,
+        type: 'single_line_text_field',
+      }
+    });
+    // Fetch order details for email
+    const orderResp = await shopifyRequest('get', `/orders/${orderId}.json`);
+    const order = orderResp.data.order;
+    // Find status config
+    const statusConfig = findStatusByName(status);
+    if (statusConfig) {
+      // Send email to customer if enabled
+      if (statusConfig.emailCustomer && order.email) {
+        const html = orderStatusEmail({
+          orderNumber: order.name || order.order_number || order.id,
+          status: statusConfig.orderStatus,
+          topContent: statusConfig.topContent,
+          bottomContent: statusConfig.bottomContent
+        });
+        const transporter = getTransporter();
+        await transporter.sendMail({
+          from: process.env.EMAIL_FROM,
+          to: order.email,
+          subject: `Order Update - Order #${order.name || order.order_number || order.id}`,
+          html
+        });
+      }
+      // Send email to staff if enabled
+      if (statusConfig.emailStaff) {
+        const html = orderStatusEmail({
+          orderNumber: order.name || order.order_number || order.id,
+          status: statusConfig.orderStatus,
+          topContent: statusConfig.topContent,
+          bottomContent: statusConfig.bottomContent
+        });
+        const transporter = getTransporter();
+        await transporter.sendMail({
+          from: process.env.EMAIL_FROM,
+          to: statusConfig.emailStaff,
+          subject: `Order Status Changed (Staff) - Order #${order.name || order.order_number || order.id}`,
+          html
+        });
+      }
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update status error:', err.response?.data || err);
+    res.status(500).json({ error: 'Failed to update status' });
+  }
+});
+
 // Admin UI (simple HTML page)
-app.get('/admin', (req, res) => {
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'yourStrongPassword';
+
+function adminAuth(req, res, next) {
+  const user = basicAuth(req);
+  if (!user || user.name !== ADMIN_USER || user.pass !== ADMIN_PASS) {
+    res.set('WWW-Authenticate', 'Basic realm=\"Admin Area\"');
+    return res.status(401).send('Authentication required.');
+  }
+  next();
+}
+
+app.get('/admin', adminAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 

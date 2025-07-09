@@ -175,6 +175,88 @@
     }
     document.getElementById('cancelEdit').onclick = resetForm;
     fetchStatuses();
+
+    // --- ORDER STATUS LOG SECTION ---
+    // Add after status management
+    // HTML for order log
+    const orderLogSection = document.createElement('div');
+    orderLogSection.innerHTML = `
+      <h2>Status Log</h2>
+      <table id="orderLogTable">
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Customer Email</th>
+            <th>Customer Name</th>
+            <th>Current Status</th>
+            <th>Add Status</th>
+            <th>Save</th>
+          </tr>
+        </thead>
+        <tbody id="orderLogBody"></tbody>
+      </table>
+    `;
+    document.body.appendChild(orderLogSection);
+
+    let allStatuses = [];
+    function fetchAllStatuses() {
+      return fetch('/api/statuses').then(r => r.json()).then(data => {
+        allStatuses = data;
+        return data;
+      });
+    }
+    function fetchOrdersAndRender() {
+      fetchAllStatuses().then(() => {
+        fetch('/api/orders').then(r => r.json()).then(orders => {
+          const tbody = document.getElementById('orderLogBody');
+          tbody.innerHTML = '';
+          orders.forEach(order => {
+            const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}" ${order.status===s.orderStatus?'selected':''}>${s.orderStatus}</option>`).join('');
+            tbody.innerHTML += `
+              <tr>
+                <td>${order.name}</td>
+                <td>${order.email||''}</td>
+                <td>${order.customer||''}</td>
+                <td>${order.status ? `<span style='background:${colorMap[allStatuses.find(s=>s.orderStatus===order.status)?.color]||'#eee'};padding:2px 8px;border-radius:4px;'>${order.status}</span>` : '<em>None</em>'}</td>
+                <td>
+                  <select id="status-select-${order.id}">
+                    <option value="">Select Status</option>
+                    ${statusOptions}
+                  </select>
+                </td>
+                <td><button class="btn" onclick="saveOrderStatus('${order.id}')">Save</button></td>
+              </tr>
+            `;
+          });
+        });
+      });
+    }
+    window.saveOrderStatus = function(orderId) {
+      const sel = document.getElementById(`status-select-${orderId}`);
+      const status = sel.value;
+      if (!status) return alert('Please select a status');
+      sel.disabled = true;
+      fetch(`/api/orders/${orderId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      }).then(r => r.json()).then(resp => {
+        sel.disabled = false;
+        if (resp.success) {
+          alert('Status updated and email sent!');
+          fetchOrdersAndRender();
+        } else {
+          alert('Failed to update status: ' + (resp.error||''));
+        }
+      }).catch(() => {
+        sel.disabled = false;
+        alert('Failed to update status');
+      });
+    }
+    // Initial fetch
+    fetchOrdersAndRender();
+    // Optionally, refresh every few minutes
+    // setInterval(fetchOrdersAndRender, 5*60*1000);
   </script>
 </body>
 </html> 
