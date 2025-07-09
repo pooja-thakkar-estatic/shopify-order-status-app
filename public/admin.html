@@ -4,28 +4,31 @@
   <meta charset="UTF-8">
   <title>Order Status Admin</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 90vw; width: 90%; margin: 40px auto; background: #f7f7f7; }
+    body { font-family: 'Inter', Arial, sans-serif; background: #f7f7f7; }
     .tabs { display: flex; margin-bottom: 24px; }
     .tab-btn { padding: 10px 24px; border: none; background: #eee; cursor: pointer; font-size: 16px; border-radius: 8px 8px 0 0; margin-right: 2px; }
     .tab-btn.active { background: #fff; border-bottom: 2px solid #007bff; color: #007bff; }
     .tab-content { background: #fff; padding: 18px; border-radius: 0 8px 8px 8px; box-shadow: 0 2px 8px #eee; }
     h2 { color: #333; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-    th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: left; }
-    th { background: #eee; }
-    .color-box { display: inline-block; width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ccc; vertical-align: middle; }
-    .actions button { margin-right: 6px; }
-    .form-row { margin-bottom: 12px; }
-    label { display: inline-block; width: 140px; }
-    input[type="text"], textarea { padding: 6px; width: 320px; }
-    textarea { height: 48px; resize: vertical; }
-    select { padding: 6px; }
     .status-form { background: #fff; padding: 18px; border-radius: 8px; box-shadow: 0 2px 8px #eee; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 24px; table-layout: auto; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #e5e5e5; text-align: left; vertical-align: top; }
+    th { background: #fafbfc; font-weight: 600; color: #222; }
+    tr:nth-child(even) { background: #fcfcfc; }
+    tr:hover { background: #f4f8fb; }
+    td { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .status-chip { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 13px; margin-right: 4px; color: #fff; font-weight: 500; }
     .btn { padding: 6px 16px; border: none; border-radius: 4px; background: #007bff; color: #fff; cursor: pointer; }
-    .btn.delete { background: #dc3545; }
-    .btn.edit { background: #ffc107; color: #333; }
-    .checkbox-label { width: auto; display: inline; }
-    input[type="checkbox"] { width: 18px; height: 18px; vertical-align: middle; }
+    .btn:disabled { background: #b3d1ff; cursor: not-allowed; }
+    #orderLogTable { font-size: 15px; }
+    #orderLogTable th, #orderLogTable td { white-space: nowrap; }
+    @media (max-width: 1200px) {
+      td, th { font-size: 13px; max-width: 120px; }
+    }
+    @media (max-width: 900px) {
+      .tab-content, .status-form { padding: 8px; }
+      table { font-size: 12px; }
+    }
   </style>
 </head>
 <body>
@@ -278,8 +281,8 @@
         const tags = Array.isArray(order.tags) ? order.tags.join(', ') : (order.tags || '');
         const statusesBox = (order.order_statuses||[]).map(statusName => {
           const statusObj = allStatuses.find(s => s.orderStatus === statusName);
-          const color = statusObj ? colorMap[statusObj.color] : '#eee';
-          return `<span style="background:${color};padding:2px 8px;border-radius:4px;margin-right:4px;">${statusName}</span>`;
+          const color = statusObj ? colorMap[statusObj.color] : '#888';
+          return `<span class="status-chip" style="background:${color};">${statusName}</span>`;
         }).join('');
         tbody.innerHTML += `
           <tr>
@@ -290,8 +293,8 @@
             <td>${order.total_price||''}</td>
             <td>${order.financial_status||order.payment_status||''}</td>
             <td>${order.fulfillment_status||''}</td>
-            <td>${tags}</td>
-            <td>${items}</td>
+            <td title="${tags}">${tags}</td>
+            <td title="${items.replace(/<br>/g, ', ')}">${items}</td>
             <td>${order.delivery_method||((order.shipping_lines||[]).map(s=>s.title).join(', '))||''}</td>
             <td>${order.source_name||order.channel||''}</td>
             <td>${order.email||''}</td>
