@@ -138,6 +138,92 @@
       background:none;
       border:none;
     }
+    .status-form {
+      background: #fff;
+      padding: 28px 32px 18px 32px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px #eee;
+      margin-bottom: 32px;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+      border: 1px solid #e5e5e5;
+    }
+    .status-form h4 {
+      margin-top: 0;
+      margin-bottom: 18px;
+      font-size: 20px;
+      color: #333;
+      text-align: center;
+    }
+    .form-row {
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    label {
+      display: inline-block;
+      width: 140px;
+      font-weight: 500;
+      color: #444;
+      margin-right: 10px;
+    }
+    input[type="text"], textarea, select {
+      padding: 7px 10px;
+      width: 220px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 15px;
+      background: #fff;
+    }
+    textarea { height: 48px; resize: vertical; }
+    input[type="checkbox"] { width: 18px; height: 18px; vertical-align: middle; }
+    .btn {
+      padding: 7px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 15px;
+      margin-right: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-add { background: #28a745; color: #fff; }
+    .btn-edit { background: #007bff; color: #fff; }
+    .btn-delete { background: #dc3545; color: #fff; }
+    .btn:disabled { background: #b3d1ff; cursor: not-allowed; }
+    .actions button { margin-right: 6px; }
+    #statusesTable {
+      width: 955px;
+      margin: 0 auto;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 15px;
+      background: #fff;
+      box-shadow: 0 2px 8px #eee;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    #statusesTable th, #statusesTable td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5e5e5;
+      text-align: left;
+      vertical-align: top;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 120px;
+    }
+    #statusesTable th {
+      background: #fafbfc;
+      font-weight: 600;
+      color: #222;
+    }
+    #statusesTable tr:nth-child(even) { background: #fcfcfc; }
+    #statusesTable tr:hover { background: #f4f8fb; }
+    @media (max-width: 1100px) {
+      #statusesTable { width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -171,11 +257,8 @@
             <th>Total</th>
             <th>Payment status</th>
             <th>Fulfillment status</th>
-            <th>Tags</th>
             <th>Items</th>
             <th>Delivery method</th>
-            <th>Channel</th>
-            <th>Customer Email</th>
             <th>Order Statuses</th>
             <th>Add Status</th>
             <th>Save</th>
@@ -206,7 +289,6 @@
               <option value="light green">Light Green</option>
               <option value="light pink">Light Pink</option>
             </select>
-            <span id="colorPreview" class="color-box" style="background: red;"></span>
           </div>
           <div class="form-row">
             <label for="description">Description</label>
@@ -229,11 +311,11 @@
             <input type="text" id="emailStaff" placeholder="staff@email.com (optional)" />
           </div>
           <input type="hidden" id="statusId" />
-          <button type="submit" class="btn" id="saveBtn">Add Status</button>
+          <button type="submit" class="btn btn-add" id="saveBtn">Add Status</button>
           <button type="button" class="btn" id="cancelEdit" style="display:none;">Cancel</button>
         </form>
       </div>
-      <table>
+      <table id="statusesTable">
         <thead>
           <tr>
             <th>ID</th>
@@ -267,13 +349,13 @@
           tbody.innerHTML += `<tr>
             <td>${s.id}</td>
             <td>${s.orderStatus}</td>
-            <td><span class="color-box" style="background:${colorMap[s.color]||s.color}"></span> ${s.color}</td>
+            <td>${s.color}</td>
             <td>${s.description||''}</td>
             <td>${s.emailCustomer ? 'Yes' : 'No'}</td>
             <td>${s.emailStaff||''}</td>
             <td class="actions">
-              <button class="btn edit" onclick="editStatus(${s.id})">Edit</button>
-              <button class="btn delete" onclick="deleteStatus(${s.id})">Delete</button>
+              <button class="btn btn-edit" onclick="editStatus(${s.id})">Edit</button>
+              <button class="btn btn-delete" onclick="deleteStatus(${s.id})">Delete</button>
             </td>
           </tr>`;
         });
@@ -396,7 +478,6 @@
       pagedOrders.forEach(order => {
         const statusOptions = allStatuses.map(s => `<option value=\"${s.orderStatus}\">${s.orderStatus}</option>`).join('');
         const items = (order.line_items||order.items||[]).map(i => `${i.quantity}x ${i.title||i.name}`).join(', ');
-        const tags = Array.isArray(order.tags) ? order.tags.join(', ') : (order.tags || '');
         // Show all statuses as chips
         const statusesBox = (order.order_statuses||[]).map(statusName => {
           const statusObj = allStatuses.find(s => s.orderStatus === statusName);
@@ -412,12 +493,13 @@
             <td>${order.total_price||''}</td>
             <td>${order.financial_status||order.payment_status||''}</td>
             <td>${order.fulfillment_status||''}</td>
-            <td title="${tags}">${tags.length > 18 ? tags.slice(0, 18) + '…' : tags}</td>
             <td title="${items}">${items.length > 18 ? items.slice(0, 18) + '…' : items}</td>
-            <td>${order.delivery_method||((order.shipping_lines||[]).map(s=>s.title).join(', '))||''}</td>
-            <td>${order.source_name||order.channel||''}</td>
-            <td title="${order.email||''}">${order.email||''}</td>
-            <td>${statusesBox}</td>
+            <td>
+              <select id="status-select-${order.id}">
+                <option value="">Select Status</option>
+                ${statusOptions}
+              </select>
+            </td>
             <td>
               <select id="status-select-${order.id}">
                 <option value="">Select Status</option>
