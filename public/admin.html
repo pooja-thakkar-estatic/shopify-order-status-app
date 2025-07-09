@@ -13,10 +13,11 @@
     }
     .tab-content {
       background: #fff;
-      padding: 18px;
-      border-radius: 0 8px 8px 8px;
+      padding: 32px 32px 24px 32px;
+      border-radius: 0 0 8px 8px;
       box-shadow: 0 2px 8px #eee;
-      max-width: 100vw;
+      max-width: 1100px;
+      margin: 0 auto 32px auto;
       overflow-x: auto;
     }
     #orderLogTable {
@@ -35,7 +36,10 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 140px;
+      max-width: 120px;
+    }
+    th:nth-child(12), td:nth-child(12) { /* Customer Email */
+      max-width: 180px;
     }
     th {
       background: #fafbfc;
@@ -54,12 +58,14 @@
       font-weight: 500;
     }
     .btn {
-      padding: 6px 16px;
+      padding: 7px 20px;
       border: none;
       border-radius: 4px;
       background: #007bff;
       color: #fff;
       cursor: pointer;
+      font-size: 15px;
+      margin-right: 8px;
     }
     .btn:disabled { background: #b3d1ff; cursor: not-allowed; }
     #orderLogTable th, #orderLogTable td { white-space: nowrap; }
@@ -80,11 +86,33 @@
       th:nth-child(11), td:nth-child(11) /* Channel */
       { display: none; }
     }
+    .note-box {
+      background:#fff3cd;
+      color:#856404;
+      padding:10px 20px;
+      border-radius:6px;
+      margin-bottom:18px;
+      border:1px solid #ffeeba;
+      max-width:900px;
+      margin:auto;
+      position:relative;
+    }
+    .note-box .close-note {
+      position:absolute;
+      right:12px;
+      top:8px;
+      font-size:18px;
+      color:#856404;
+      cursor:pointer;
+      background:none;
+      border:none;
+    }
   </style>
 </head>
 <body>
   <!-- SMTP Error Note -->
-  <div style="background:#fff3cd;color:#856404;padding:10px 20px;border-radius:6px;margin-bottom:18px;border:1px solid #ffeeba;max-width:900px;margin:auto;">
+  <div class="note-box" id="smtpNote">
+    <button class="close-note" onclick="document.getElementById('smtpNote').style.display='none'">&times;</button>
     <b>Note:</b> If you see <code>553 Relaying disallowed</code> errors, ensure <b>EMAIL_FROM</b> matches your SMTP user email exactly in your environment variables. For Gmail, use your Gmail address and an App Password.
   </div>
   <div class="tabs">
@@ -336,11 +364,13 @@
         const statusOptions = allStatuses.map(s => `<option value=\"${s.orderStatus}\">${s.orderStatus}</option>`).join('');
         const items = (order.line_items||order.items||[]).map(i => `${i.quantity}x ${i.title||i.name}`).join(', ');
         const tags = Array.isArray(order.tags) ? order.tags.join(', ') : (order.tags || '');
-        const statusesBox = (order.order_statuses||[]).map(statusName => {
-          const statusObj = allStatuses.find(s => s.orderStatus === statusName);
-          const color = statusObj ? colorMap[statusObj.color] : '#888';
-          return `<span class=\"status-chip\" style=\"background:${color};\">${statusName}</span>`;
-        }).join('');
+        // Show only the latest status as a chip
+        const latestStatus = (order.order_statuses||[]).slice(-1)[0];
+        const statusObj = allStatuses.find(s => s.orderStatus === latestStatus);
+        const color = statusObj ? colorMap[statusObj.color] : '#888';
+        const statusesBox = latestStatus
+          ? `<span class=\"status-chip\" style=\"background:${color};\">${latestStatus}</span>`
+          : '<em>None</em>';
         tbody.innerHTML += `
           <tr>
             <td>${order.name||order.id}</td>
@@ -354,8 +384,8 @@
             <td title="${items}">${items.length > 18 ? items.slice(0, 18) + '…' : items}</td>
             <td>${order.delivery_method||((order.shipping_lines||[]).map(s=>s.title).join(', '))||''}</td>
             <td>${order.source_name||order.channel||''}</td>
-            <td>${order.email||''}</td>
-            <td>${statusesBox||'<em>None</em>'}</td>
+            <td title="${order.email||''}">${order.email||''}</td>
+            <td>${statusesBox}</td>
             <td>
               <select id="status-select-${order.id}">
                 <option value="">Select Status</option>
@@ -401,7 +431,7 @@
       }).then(r => r.json()).then(resp => {
         sel.disabled = false;
         if (resp.success) {
-          alert('Status updated and email sent!');
+          showToast('Status updated and email sent!');
           fetchOrdersAndRender();
         } else {
           alert('Failed to update status: ' + (resp.error||''));
@@ -430,6 +460,33 @@
       document.getElementById('tab-content-status-mgmt').style.display = '';
       document.getElementById('tab-content-status-log').style.display = 'none';
     };
+
+    // Toast notification
+    function showToast(msg) {
+      let toast = document.getElementById('toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.style.display = 'none';
+        toast.style.position = 'fixed';
+        toast.style.top = '32px';
+        toast.style.right = '32px';
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '220px';
+        toast.style.padding = '14px 28px';
+        toast.style.background = '#222';
+        toast.style.color = '#fff';
+        toast.style.borderRadius = '8px';
+        toast.style.boxShadow = '0 2px 8px #2228';
+        toast.style.opacity = '0.97';
+        toast.style.fontSize = '16px';
+        toast.style.pointerEvents = 'none';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    }
   </script>
 </body>
 </html> 
