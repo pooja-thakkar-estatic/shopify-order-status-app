@@ -13,7 +13,7 @@
     }
     .main-content {
       width: 90%;
-      max-width: 1400px;
+      max-width: 1450px;
       margin: 32px auto 32px auto;
     }
     .tab-content {
@@ -208,7 +208,7 @@
       padding: 8px 10px;
       border-bottom: 1px solid #e5e5e5;
       text-align: left;
-      vertical-align: top;
+      vertical-align: middle;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -218,9 +218,15 @@
       background: #fafbfc;
       font-weight: 600;
       color: #222;
+      text-align: center;
     }
     #statusesTable tr:nth-child(even) { background: #fcfcfc; }
     #statusesTable tr:hover { background: #f4f8fb; }
+    .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
     @media (max-width: 1100px) {
       #statusesTable { width: 100%; }
     }
@@ -315,6 +321,7 @@
           <button type="button" class="btn" id="cancelEdit" style="display:none;">Cancel</button>
         </form>
       </div>
+      <h3 style="text-align:center;margin:32px 0 16px 0;font-size:22px;letter-spacing:0.5px;">All Statuses</h3>
       <table id="statusesTable">
         <thead>
           <tr>
@@ -347,11 +354,11 @@
         tbody.innerHTML = '';
         data.forEach(s => {
           tbody.innerHTML += `<tr>
-            <td>${s.id}</td>
+            <td style="text-align:center;">${s.id}</td>
             <td>${s.orderStatus}</td>
             <td>${s.color}</td>
             <td>${s.description||''}</td>
-            <td>${s.emailCustomer ? 'Yes' : 'No'}</td>
+            <td style="text-align:center;">${s.emailCustomer ? 'Yes' : 'No'}</td>
             <td>${s.emailStaff||''}</td>
             <td class="actions">
               <button class="btn btn-edit" onclick="editStatus(${s.id})">Edit</button>
