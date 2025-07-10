@@ -498,6 +498,21 @@
       return colorMap[colorName] || colorName;
     }
 
+    // Utility: determine if a hex color is light
+    function isColorLight(hex) {
+      if (!hex) return true;
+      // Remove # if present
+      hex = hex.replace('#', '');
+      // Convert 3-digit to 6-digit
+      if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
+      const r = parseInt(hex.substr(0,2),16);
+      const g = parseInt(hex.substr(2,2),16);
+      const b = parseInt(hex.substr(4,2),16);
+      // Perceived brightness
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      return brightness > 200; // threshold for light background
+    }
+
     // Remove color dropdown population and autoAssignColor logic
 
     function fetchStatuses() {
@@ -614,20 +629,21 @@
             let statusesCell = row.querySelector('.statuses-cell');
             const statusObj = allStatuses.find(s => s.orderStatus === status);
             const color = statusObj ? getColorByName(statusObj.color) : '#888';
+            const textColor = isColorLight(color) ? '#222' : '#fff';
             // If .statuses-cell does not exist (first time), replace the <em>None</em> cell
             if (!statusesCell) {
               // Find the cell with <em>None</em>
               const cells = row.querySelectorAll('td');
               for (let i = 0; i < cells.length; i++) {
                 if (cells[i].innerHTML.includes('<em>None</em>')) {
-                  cells[i].innerHTML = `<div class="statuses-cell"><span class='status-chip' style='background:${color};'>${status} <button class='remove-chip' onclick="removeOrderStatus('${orderId}','${status}')">×</button></span></div>`;
+                  cells[i].innerHTML = `<div class="statuses-cell"><span class='status-chip' style='background:${color};color:${textColor};'>${status} <button class='remove-chip' style='color:${textColor};' onclick="removeOrderStatus('${orderId}','${status}')">×</button></span></div>`;
                   statusesCell = cells[i].querySelector('.statuses-cell');
                   break;
                 }
               }
             } else {
               // Show only the current status (last selected)
-              statusesCell.innerHTML = `<span class='status-chip' style='background:${color};'>${status} <button class='remove-chip' onclick="removeOrderStatus('${orderId}','${status}')">×</button></span>`;
+              statusesCell.innerHTML = `<span class='status-chip' style='background:${color};color:${textColor};'>${status} <button class='remove-chip' style='color:${textColor};' onclick="removeOrderStatus('${orderId}','${status}')">×</button></span>`;
             }
             // Update row background color and text color instantly
             if (status === 'Order Completed') {
@@ -636,7 +652,7 @@
               row.style.borderLeftColor = '#388e3c';
             } else {
               row.style.backgroundColor = color;
-              row.style.color = '#fff';
+              row.style.color = textColor;
               row.style.borderLeftColor = color;
             }
             row.classList.add('status-colored');
@@ -723,29 +739,24 @@
       
       pagedOrders.forEach(order => {
         const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
-        // Get current status (last one in the array)
         const currentStatus = order.order_statuses && order.order_statuses.length > 0 
           ? order.order_statuses[order.order_statuses.length - 1] 
           : null;
         let statusesBox = '';
         let rowStyle = '';
         let rowClass = 'order-row';
-        // Check if currentStatus exists in allStatuses
         const statusObj = allStatuses.find(s => s.orderStatus === currentStatus);
         if (currentStatus && statusObj) {
           const color = getColorByName(statusObj.color);
-          statusesBox = `<div class="statuses-cell">
-            <span class="status-chip" style="background:${color};">${currentStatus} <button class="remove-chip" onclick="removeOrderStatus('${order.id}','${currentStatus}')">×</button></span>
-          </div>`;
+          const textColor = isColorLight(color) ? '#222' : '#fff';
+          statusesBox = `<div class="statuses-cell"><span class='status-chip' style='background:${color};color:${textColor};'>${currentStatus} <button class='remove-chip' style='color:${textColor};' onclick="removeOrderStatus('${order.id}','${currentStatus}')">×</button></span></div>`;
           rowClass += ' status-colored';
-          // If status is 'Order Completed', use strong green
           if (currentStatus === 'Order Completed') {
             rowStyle = `background-color: #4caf50; color: #fff; border-left-color: #388e3c;`;
           } else {
-            rowStyle = `background-color: ${color}; color: #fff; border-left-color: ${color};`;
+            rowStyle = `background-color: ${color}; color: ${textColor}; border-left-color: ${color};`;
           }
         } else {
-          // Status is None or was deleted
           statusesBox = '<em>None</em>';
           rowStyle = 'background-color: #fff; color: #222; border-left-color: #fff;';
         }
