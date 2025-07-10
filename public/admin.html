@@ -553,6 +553,86 @@
         alert('Failed to remove status');
       });
     }
+    // --- Order fetching and rendering logic (restored) ---
+    let allStatuses = [];
+    function fetchAllStatuses() {
+      return fetch('/api/statuses').then(r => r.json()).then(data => {
+        allStatuses = data;
+        return data;
+      });
+    }
+    let allOrders = [];
+    let currentPage = 1;
+    const pageSize = 20;
+    function populateStatusFilter() {
+      const filter = document.getElementById('statusFilter');
+      filter.innerHTML = '<option value="">All</option>' + allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
+    }
+    function renderOrders(orders) {
+      const filterVal = document.getElementById('statusFilter').value;
+      const searchVal = document.getElementById('orderSearch').value.toLowerCase();
+      let filtered = orders.filter(order =>
+        (!filterVal || (order.order_statuses||[]).includes(filterVal)) &&
+        (
+          !searchVal ||
+          (order.name && order.name.toLowerCase().includes(searchVal)) ||
+          (order.customer && order.customer.toLowerCase().includes(searchVal)) ||
+          (order.email && order.email.toLowerCase().includes(searchVal))
+        )
+      );
+      const totalPages = Math.ceil(filtered.length / pageSize);
+      if (currentPage > totalPages) currentPage = totalPages || 1;
+      const pagedOrders = filtered.slice((currentPage-1)*pageSize, currentPage*pageSize);
+      const tbody = document.getElementById('orderLogBody');
+      tbody.innerHTML = '';
+      pagedOrders.forEach(order => {
+        const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
+        // Show all statuses as chips with remove button
+        const statusesBox = (order.order_statuses||[]).map(statusName => {
+          const statusObj = allStatuses.find(s => s.orderStatus === statusName);
+          const color = statusObj ? colorMap[statusObj.color] : '#888';
+          return `<span class="status-chip" style="background:${color};">${statusName} <button class="remove-chip" onclick="removeOrderStatus('${order.id}','${statusName}')">×</button></span>`;
+        }).join('') || '<em>None</em>';
+        tbody.innerHTML += `
+          <tr>
+            <td>${order.name||order.id}</td>
+            <td>${order.customer_name||order.customer||''}</td>
+            <td>${order.email||''}</td>
+            <td>${order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}</td>
+            <td>${statusesBox}</td>
+            <td>
+              <select class="add-status-select" id="status-select-${order.id}">
+                <option value="">Select Status</option>
+                ${statusOptions}
+              </select>
+              <button class="btn-save-status" onclick="saveOrderStatus('${order.id}')">Save</button>
+            </td>
+          </tr>
+        `;
+      });
+      // Pagination controls
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+      if (totalPages > 1) {
+        pagination.innerHTML =
+          `<button onclick="prevPage()" ${currentPage===1?'disabled':''}>Prev</button> ` +
+          `Page ${currentPage} of ${totalPages} ` +
+          `<button onclick="nextPage()" ${currentPage===totalPages?'disabled':''}>Next</button>`;
+      }
+    }
+    function fetchOrdersAndRender() {
+      fetchAllStatuses().then(() => {
+        populateStatusFilter();
+        fetch('/api/orders').then(r => r.json()).then(orders => {
+          allOrders = orders;
+          renderOrders(allOrders);
+        });
+      });
+    }
+    function prevPage() { if (currentPage > 1) { currentPage--; renderOrders(allOrders); } }
+    function nextPage() { const totalPages = Math.ceil(allOrders.length / pageSize); if (currentPage < totalPages) { currentPage++; renderOrders(allOrders); } }
+    document.getElementById('statusFilter').onchange = function() { currentPage = 1; renderOrders(allOrders); };
+    document.getElementById('orderSearch').oninput = function() { currentPage = 1; renderOrders(allOrders); };
     // Initial fetch
     fetchOrdersAndRender();
     // Optionally, refresh every few minutes
