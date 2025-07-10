@@ -224,7 +224,11 @@ app.post('/api/orders/:id/status/remove', (req, res) => {
 app.post('/api/orders/:orderId/status', async (req, res) => {
   const orderId = req.params.orderId;
   const { status } = req.body;
-  if (!status) return res.status(400).json({ error: 'Missing status' });
+  console.log('Received status update for order:', orderId, 'status:', status);
+  if (!status) {
+    console.log('Missing status in request body');
+    return res.status(400).json({ error: 'Missing status' });
+  }
   const orderStatuses = readOrderStatuses();
   if (!orderStatuses[orderId]) orderStatuses[orderId] = [];
   orderStatuses[orderId] = [status]; // Only keep the last status
@@ -244,12 +248,14 @@ app.post('/api/orders/:orderId/status', async (req, res) => {
       const ADMIN_API_VERSION = '2023-10';
       const ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN || process.env.SHOPIFY_ACCESS_TOKEN;
       const axios = require('axios');
+      console.log('Fetching order details from Shopify for orderId:', orderId);
       const resp = await axios.get(`https://${SHOP}/admin/api/${ADMIN_API_VERSION}/orders/${orderId}.json`, {
         headers: { 'X-Shopify-Access-Token': ACCESS_TOKEN }
       });
       const order = resp.data.order;
       orderEmail = order.email;
       orderName = order.name;
+      console.log('Fetched order details:', { orderEmail, orderName });
       // Send customer email
       if (statusObj && statusObj.emailCustomer && orderEmail) {
         try {
@@ -260,6 +266,7 @@ app.post('/api/orders/:orderId/status', async (req, res) => {
             bottomContent: statusObj.bottomContent
           });
           const transporter = getTransporter();
+          console.log('Sending customer email to:', orderEmail);
           await transporter.sendMail({
             from: process.env.EMAIL_FROM,
             to: orderEmail,
@@ -267,6 +274,7 @@ app.post('/api/orders/:orderId/status', async (req, res) => {
             html
           });
           emailSent = true;
+          console.log('Customer email sent successfully');
         } catch (e) {
           errorMsg += 'Customer email send error: ' + e.message + '\n';
           console.error('Customer email send error:', e);
@@ -285,6 +293,7 @@ app.post('/api/orders/:orderId/status', async (req, res) => {
             bottomContent: statusObj.bottomContent
           });
           const transporter = getTransporter();
+          console.log('Sending staff email to:', statusObj.emailStaff);
           await transporter.sendMail({
             from: process.env.EMAIL_FROM,
             to: statusObj.emailStaff,
@@ -292,6 +301,7 @@ app.post('/api/orders/:orderId/status', async (req, res) => {
             html
           });
           staffEmailSent = true;
+          console.log('Staff email sent successfully');
         } catch (e) {
           errorMsg += 'Staff email send error: ' + e.message + '\n';
           console.error('Staff email send error:', e);
@@ -307,8 +317,10 @@ app.post('/api/orders/:orderId/status', async (req, res) => {
   }
   // Only return success if email is sent or not required
   if (errorMsg && errorMsg.trim().length > 0) {
+    console.log('Status update failed:', errorMsg);
     return res.json({ success: false, error: errorMsg });
   }
+  console.log('Status update successful for order:', orderId, 'status:', status);
   res.json({ success: true });
 });
 

@@ -632,7 +632,7 @@
             orderObj.order_statuses = [status]; // Only keep the current status
           }
         } else {
-          //alert('Failed to update status: ' + (resp.error||''));
+          alert('Failed to update status: ' + (resp.error || ''));
         }
       }).catch(() => {
         sel.disabled = false;
@@ -694,7 +694,7 @@
       const searchVal = document.getElementById('orderSearch').value.toLowerCase();
       
       let filtered = orders.filter(order =>
-        (!filterVal || (order.order_statuses||[]).includes(filterVal)) &&
+        (!filterVal || ((order.order_statuses||[]).slice(-1)[0] === filterVal)) &&
         (
           !searchVal ||
           (order.name && order.name.toLowerCase().includes(searchVal)) ||
@@ -864,12 +864,10 @@
 
     // Export Orders as CSV
     document.getElementById('exportOrdersBtn').onclick = function() {
-      // Use the same filter/search as the table
       const filterVal = document.getElementById('statusFilter').value;
       const searchVal = document.getElementById('orderSearch').value.toLowerCase();
-      // Use the same filtering logic as renderOrders
       let filtered = allOrders.filter(order =>
-        (!filterVal || (order.order_statuses||[]).includes(filterVal)) &&
+        (!filterVal || ((order.order_statuses||[]).slice(-1)[0] === filterVal)) &&
         (
           !searchVal ||
           (order.name && order.name.toLowerCase().includes(searchVal)) ||
