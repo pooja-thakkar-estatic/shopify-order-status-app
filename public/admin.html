@@ -79,6 +79,15 @@
     }
     tr:nth-child(even) { background: #fcfcfc; }
     tr:hover { background: #f4f8fb; }
+    
+    /* Status row coloring */
+    .order-row {
+      transition: background-color 0.3s ease;
+    }
+    .order-row.status-colored {
+      border-left: 4px solid;
+    }
+    
     .status-chip {
       display: inline-block;
       padding: 2px 10px;
@@ -88,6 +97,21 @@
       color: #fff;
       font-weight: 500;
     }
+    
+    /* Filter dropdown with color boxes */
+    .filter-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .color-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 1px solid #ddd;
+      flex-shrink: 0;
+    }
+    
     .btn {
       padding: 7px 20px;
       border: none;
@@ -346,11 +370,6 @@
   </style>
 </head>
 <body>
-  <!-- SMTP Error Note -->
-  <!-- <div class="note-box" id="smtpNote">
-    <button class="close-note" onclick="document.getElementById('smtpNote').style.display='none'">&times;</button>
-    <b>Note:</b> If you see <code>553 Relaying disallowed</code> errors, ensure <b>EMAIL_FROM</b> matches your SMTP user email exactly in your environment variables. For Gmail, use your Gmail address and an App Password.
-  </div> -->
   <div class="main-content">
     <div class="tabs">
       <button class="tab-btn active" id="tab-status-log">Status Log</button>
@@ -374,7 +393,7 @@
               <th>Customer Name</th>
               <th>Customer Email</th>
               <th>Date of Order</th>
-              <th>Order Statuses</th>
+              <th>Current Status</th>
               <th>Add Status</th>
               <th>Save Status</th>
             </tr>
@@ -397,13 +416,7 @@
           <div class="form-row">
             <label for="color">Color</label>
             <select id="color" required>
-              <option value="red">Red</option>
-              <option value="green">Green</option>
-              <option value="yellow">Yellow</option>
-              <option value="blue">Blue</option>
-              <option value="light blue">Light Blue</option>
-              <option value="light green">Light Green</option>
-              <option value="light pink">Light Pink</option>
+              <option value="">Select a color</option>
             </select>
           </div>
           <div class="form-row">
@@ -448,25 +461,84 @@
       </table>
     </div>
   </div>
+  
+  <!-- Include the colors file -->
+  <script src="../colors.js"></script>
+  
   <script>
-    const colorMap = {
-      'red': '#dc3545',
-      'green': '#28a745',
-      'yellow': '#ffc107',
-      'blue': '#007bff',
-      'light blue': '#5bc0de',
-      'light green': '#b2f2b2',
-      'light pink': '#f8bbd0'
-    };
+    // 30 carefully selected colors for order statuses
+    const STATUS_COLORS = [
+      '#1976d2', '#388e3c', '#f57c00', '#d32f2f', '#7b1fa2', '#00796b', '#c2185b', '#5d4037', '#455a64', '#ff6f00',
+      '#2e7d32', '#c62828', '#1565c0', '#6a1b9a', '#00695c', '#ad1457', '#3e2723', '#263238', '#ff8f00', '#4caf50',
+      '#ff5722', '#9c27b0', '#00bcd4', '#ff9800', '#795548', '#607d8b', '#e91e63', '#3f51b5', '#009688', '#ffc107'
+    ];
+
+    // Function to get a unique color for a status
+    function getStatusColor(statusName, existingColors = {}) {
+      if (existingColors[statusName]) {
+        return existingColors[statusName];
+      }
+      
+      const usedColors = Object.values(existingColors);
+      const availableColor = STATUS_COLORS.find(color => !usedColors.includes(color));
+      
+      return availableColor || STATUS_COLORS[Object.keys(existingColors).length % STATUS_COLORS.length];
+    }
+
+    // Function to get color by name (for backward compatibility)
+    function getColorByName(colorName) {
+      const colorMap = {
+        'red': '#d32f2f', 'green': '#388e3c', 'yellow': '#ffc107', 'blue': '#1976d2',
+        'light blue': '#00bcd4', 'light green': '#4caf50', 'light pink': '#e91e63',
+        'orange': '#f57c00', 'purple': '#7b1fa2', 'teal': '#00796b', 'pink': '#c2185b',
+        'brown': '#5d4037', 'blue grey': '#455a64', 'amber': '#ff6f00', 'dark green': '#2e7d32',
+        'dark red': '#c62828', 'dark blue': '#1565c0', 'dark purple': '#6a1b9a', 'dark teal': '#00695c',
+        'dark pink': '#ad1457', 'dark brown': '#3e2723', 'dark blue grey': '#263238', 'light amber': '#ff8f00',
+        'deep orange': '#ff5722', 'light purple': '#9c27b0', 'cyan': '#00bcd4', 'light orange': '#ff9800',
+        'light brown': '#795548', 'light blue grey': '#607d8b', 'indigo': '#3f51b5', 'light teal': '#009688',
+        'light yellow': '#ffeb3b'
+      };
+      
+      return colorMap[colorName] || colorName;
+    }
+
+    // Populate color dropdown with all available colors
+    function populateColorDropdown() {
+      const colorSelect = document.getElementById('color');
+      colorSelect.innerHTML = '';
+      
+      STATUS_COLORS.forEach((color, index) => {
+        const option = document.createElement('option');
+        option.value = color;
+        option.textContent = `Color ${index + 1}`;
+        option.style.backgroundColor = color;
+        option.style.color = getContrastColor(color);
+        colorSelect.appendChild(option);
+      });
+    }
+
+    // Get contrast color (black or white) for text
+    function getContrastColor(hexColor) {
+      const r = parseInt(hexColor.slice(1, 3), 16);
+      const g = parseInt(hexColor.slice(3, 5), 16);
+      const b = parseInt(hexColor.slice(5, 7), 16);
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      return brightness > 128 ? '#000000' : '#ffffff';
+    }
+
     function fetchStatuses() {
       fetch('/api/statuses').then(r => r.json()).then(data => {
         const tbody = document.getElementById('statusesTable');
         tbody.innerHTML = '';
         data.forEach(s => {
+          const colorHex = getColorByName(s.color);
           tbody.innerHTML += `<tr>
             <td style="text-align:center;">${s.id}</td>
             <td>${s.orderStatus}</td>
-            <td>${s.color}</td>
+            <td style="text-align:center;">
+              <div style="display:inline-block;width:20px;height:20px;background:${colorHex};border-radius:4px;border:1px solid #ddd;"></div>
+              <span style="margin-left:8px;">${s.color}</span>
+            </td>
             <td>${s.description||''}</td>
             <td style="text-align:center;">${s.emailCustomer ? 'Yes' : 'No'}</td>
             <td>${s.emailStaff||''}</td>
@@ -478,19 +550,35 @@
         });
       });
     }
-    // --- Fix resetForm to not error if colorPreview is missing ---
+
     function resetForm() {
       document.getElementById('statusForm').reset();
       document.getElementById('statusId').value = '';
       document.getElementById('saveBtn').textContent = 'Add Status';
       document.getElementById('cancelEdit').style.display = 'none';
-      var colorPreview = document.getElementById('colorPreview');
-      if (colorPreview) colorPreview.style.background = colorMap['red'];
     }
-    document.getElementById('color').addEventListener('change', function() {
-      document.getElementById('colorPreview').style.background = colorMap[this.value] || this.value;
-    });
-    // --- Fix Edit/Add Status Form Logic ---
+
+    // Auto-assign colors to new statuses
+    function autoAssignColor() {
+      fetch('/api/statuses').then(r => r.json()).then(existingStatuses => {
+        const existingColors = {};
+        existingStatuses.forEach(s => {
+          existingColors[s.orderStatus] = getColorByName(s.color);
+        });
+        
+        const newStatusInput = document.getElementById('orderStatus');
+        newStatusInput.addEventListener('input', function() {
+          if (!document.getElementById('statusId').value) { // Only for new statuses
+            const statusName = this.value.trim();
+            if (statusName && !existingColors[statusName]) {
+              const assignedColor = getStatusColor(statusName, existingColors);
+              document.getElementById('color').value = assignedColor;
+            }
+          }
+        });
+      });
+    }
+
     document.getElementById('statusForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const id = document.getElementById('statusId').value;
@@ -501,8 +589,11 @@
       const bottomContent = document.getElementById('bottomContent').value.trim();
       const emailCustomer = document.getElementById('emailCustomer').checked;
       const emailStaff = document.getElementById('emailStaff').value.trim();
+      
       if (!orderStatus) return alert('Order status required');
+      
       const payload = { orderStatus, color, description, topContent, bottomContent, emailCustomer, emailStaff };
+      
       if (id) {
         fetch(`/api/statuses/${id}`, {
           method: 'PUT',
@@ -512,6 +603,7 @@
           fetchStatuses();
           resetForm();
           showToast('Status updated!');
+          fetchOrdersAndRender(); // Refresh orders to update colors
         });
       } else {
         fetch('/api/statuses', {
@@ -522,17 +614,17 @@
           fetchStatuses();
           resetForm();
           showToast('Status added!');
+          fetchOrdersAndRender(); // Refresh orders to update colors
         });
       }
     });
-    // --- Always show Save button ---
-    document.getElementById('saveBtn').style.display = '';
-    // --- Show selected status as colored chip after save ---
-    // --- Save status, send email, and update UI immediately ---
+
+    // Save status and update UI immediately
     window.saveOrderStatus = function(orderId) {
       const sel = document.getElementById(`status-select-${orderId}`);
       const status = sel.value;
       if (!status) return alert('Please select a status');
+      
       sel.disabled = true;
       fetch(`/api/orders/${orderId}/status`, {
         method: 'POST',
@@ -542,36 +634,27 @@
         sel.disabled = false;
         if (resp.success) {
           showToast('Status updated and email sent!');
-          // Update UI immediately: add status chip to the row
+          
+          // Update UI immediately: replace status chip with new one
           const row = sel.closest('tr');
           if (row) {
             const statusesCell = row.querySelector('.statuses-cell');
-            // Remove 'None' if present
-            if (statusesCell && statusesCell.querySelector('em')) {
-              statusesCell.innerHTML = '';
-            }
-            // Get all chips (text)
-            let chips = Array.from(statusesCell.querySelectorAll('.status-chip')).map(chip => chip.textContent.trim().replace('×','').trim());
-            if (!chips.includes(status)) {
-              chips.push(status);
-            }
-            // Only show first 4 chips
-            const maxToShow = 4;
-            const chipsHtml = chips.slice(0, maxToShow).map(statusName => {
-              const statusObj = allStatuses.find(s => s.orderStatus === statusName);
-              const color = statusObj ? colorMap[statusObj.color] : '#888';
-              return `<span class='status-chip' style='background:${color};'>${statusName} <button class='remove-chip' onclick="removeOrderStatus('${orderId}','${statusName}')">×</button></span>`;
-            }).join('');
-            let viewAllLink = '';
-            if (chips.length > maxToShow) {
-              viewAllLink = `<a href='#' class='view-all-statuses' onclick="openStatusesModal('${orderId}')">View all statuses</a>`;
-            }
-            statusesCell.innerHTML = chipsHtml + ' ' + viewAllLink;
+            const statusObj = allStatuses.find(s => s.orderStatus === status);
+            const color = statusObj ? getColorByName(statusObj.color) : '#888';
+            
+            // Show only the current status (last selected)
+            statusesCell.innerHTML = `<span class='status-chip' style='background:${color};'>${status} <button class='remove-chip' onclick="removeOrderStatus('${orderId}','${status}')">×</button></span>`;
+            
+            // Update row background color
+            row.className = 'order-row status-colored';
+            row.style.borderLeftColor = color;
+            row.style.backgroundColor = color + '10'; // Light background
           }
+          
+          // Update order object
           let orderObj = window.allOrders.find(o => o.id == orderId);
           if (orderObj) {
-            if (!orderObj.order_statuses) orderObj.order_statuses = [];
-            if (!orderObj.order_statuses.includes(status)) orderObj.order_statuses.push(status);
+            orderObj.order_statuses = [status]; // Only keep the current status
           }
         } else {
           alert('Failed to update status: ' + (resp.error||''));
@@ -581,6 +664,7 @@
         alert('Failed to update status');
       });
     }
+
     window.removeOrderStatus = function(orderId, statusName) {
       if (!confirm('Remove this status from order?')) return;
       fetch(`/api/orders/${orderId}/status/remove`, {
@@ -598,7 +682,8 @@
         alert('Failed to remove status');
       });
     }
-    // --- Order fetching and rendering logic (restored) ---
+
+    // Order fetching and rendering logic
     let allStatuses = [];
     function fetchAllStatuses() {
       return fetch('/api/statuses').then(r => r.json()).then(data => {
@@ -606,16 +691,33 @@
         return data;
       });
     }
+    
     let allOrders = [];
     let currentPage = 1;
     const pageSize = 20;
+    
     function populateStatusFilter() {
       const filter = document.getElementById('statusFilter');
-      filter.innerHTML = '<option value="">All</option>' + allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
+      filter.innerHTML = '<option value="">All</option>';
+      
+      allStatuses.forEach(s => {
+        const colorHex = getColorByName(s.color);
+        const option = document.createElement('option');
+        option.value = s.orderStatus;
+        option.innerHTML = `
+          <div class="filter-option">
+            <div class="color-box" style="background:${colorHex};"></div>
+            <span>${s.orderStatus}</span>
+          </div>
+        `;
+        filter.appendChild(option);
+      });
     }
+    
     function renderOrders(orders) {
       const filterVal = document.getElementById('statusFilter').value;
       const searchVal = document.getElementById('orderSearch').value.toLowerCase();
+      
       let filtered = orders.filter(order =>
         (!filterVal || (order.order_statuses||[]).includes(filterVal)) &&
         (
@@ -625,31 +727,41 @@
           (order.email && order.email.toLowerCase().includes(searchVal))
         )
       );
+      
       const totalPages = Math.ceil(filtered.length / pageSize);
       if (currentPage > totalPages) currentPage = totalPages || 1;
       const pagedOrders = filtered.slice((currentPage-1)*pageSize, currentPage*pageSize);
+      
       const tbody = document.getElementById('orderLogBody');
       tbody.innerHTML = '';
+      
       pagedOrders.forEach(order => {
-        const statusOptions = allStatuses.map(s => `<option value=\"${s.orderStatus}\">${s.orderStatus}</option>`).join('');
+        const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
+        
+        // Get current status (last one in the array)
+        const currentStatus = order.order_statuses && order.order_statuses.length > 0 
+          ? order.order_statuses[order.order_statuses.length - 1] 
+          : null;
+        
         let statusesBox = '';
-        if (order.order_statuses && order.order_statuses.length > 0) {
-            const maxToShow = 4;
-            const chips = order.order_statuses.slice(0, maxToShow).map(statusName => {
-              const statusObj = allStatuses.find(s => s.orderStatus === statusName);
-              const color = statusObj ? colorMap[statusObj.color] : '#888';
-              return `<span class="status-chip" style="background:${color};">${statusName} <button class="remove-chip" onclick="removeOrderStatus('${order.id}','${statusName}')">×</button></span>`;
-            }).join('');
-            let viewAllLink = '';
-            if (order.order_statuses.length > maxToShow) {
-              viewAllLink = `<a href="#" class="view-all-statuses" onclick="openStatusesModal('${order.id}')">View all statuses</a>`;
-            }
-            statusesBox = `<div class="statuses-cell">${chips} ${viewAllLink}</div>`;
-          } else {
-            statusesBox = '<em>None</em>';
-          }
+        let rowStyle = '';
+        let rowClass = 'order-row';
+        
+        if (currentStatus) {
+          const statusObj = allStatuses.find(s => s.orderStatus === currentStatus);
+          const color = statusObj ? getColorByName(statusObj.color) : '#888';
+          statusesBox = `<div class="statuses-cell">
+            <span class="status-chip" style="background:${color};">${currentStatus} <button class="remove-chip" onclick="removeOrderStatus('${order.id}','${currentStatus}')">×</button></span>
+          </div>`;
+          
+          rowClass += ' status-colored';
+          rowStyle = `border-left-color: ${color}; background-color: ${color}10;`;
+        } else {
+          statusesBox = '<em>None</em>';
+        }
+        
         tbody.innerHTML += `
-          <tr>
+          <tr class="${rowClass}" style="${rowStyle}">
             <td>${order.name||order.id}</td>
             <td>${order.customer_name||order.customer||''}</td>
             <td>${order.email||''}</td>
@@ -667,6 +779,7 @@
           </tr>
         `;
       });
+      
       // Pagination controls
       const pagination = document.getElementById('pagination');
       pagination.innerHTML = '';
@@ -677,26 +790,23 @@
           `<button onclick="nextPage()" ${currentPage===totalPages?'disabled':''}>Next</button>`;
       }
     }
+    
     function fetchOrdersAndRender() {
       fetchAllStatuses().then(() => {
         populateStatusFilter();
         fetch('/api/orders').then(r => r.json()).then(orders => {
           allOrders = orders;
           renderOrders(allOrders);
-          
         });
       });
     }
+    
     function prevPage() { if (currentPage > 1) { currentPage--; renderOrders(allOrders); } }
     function nextPage() { const totalPages = Math.ceil(allOrders.length / pageSize); if (currentPage < totalPages) { currentPage++; renderOrders(allOrders); } }
+    
     document.getElementById('statusFilter').onchange = function() { currentPage = 1; renderOrders(allOrders); };
     document.getElementById('orderSearch').oninput = function() { currentPage = 1; renderOrders(allOrders); };
-    // Initial fetch
-    fetchOrdersAndRender();
-    fetchStatuses();
-    // Optionally, refresh every few minutes
-    // setInterval(fetchOrdersAndRender, 5*60*1000);
-
+    
     // Tab logic
     document.getElementById('tab-status-log').onclick = function() {
       this.classList.add('active');
@@ -705,6 +815,7 @@
       document.getElementById('tab-content-status-mgmt').style.display = 'none';
       fetchOrdersAndRender();
     };
+    
     document.getElementById('tab-status-mgmt').onclick = function() {
       this.classList.add('active');
       document.getElementById('tab-status-log').classList.remove('active');
@@ -744,49 +855,13 @@
       toast.style.display = 'flex';
       setTimeout(() => { toast.style.display = 'none'; }, 3000);
     }
-  </script>
-  <script>
-    window.openStatusesModal = function(orderId) {
-      var modal = document.getElementById('statusesModal');
-      var modalTitle = document.getElementById('statusesModalTitle');
-      var modalChips = document.getElementById('statusesModalChips');
-      if (!modal || !modalTitle || !modalChips) return;
-      modal.style.display = 'flex';
-      modalTitle.textContent = `Order ID: ${orderId}`;
-      // Find the order in allOrders
-      const order = (window.allOrders||[]).find(o => o.id == orderId);
-      if (!order) return;
-      const chips = (order.order_statuses||[]).map(statusName => {
-        const statusObj = allStatuses.find(s => s.orderStatus === statusName);
-        const color = statusObj ? colorMap[statusObj.color] : '#888';
-        return `<span class='status-chip' style='background:${color};margin-bottom:4px;'>${statusName} <button class='remove-chip' onclick=\"removeOrderStatus('${orderId}','${statusName}')\">×</button></span>`;
-      }).join('');
-      modalChips.innerHTML = chips;
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-      var closeBtn = document.getElementById('closeStatusesModal');
-      if (closeBtn) {
-        closeBtn.onclick = function() {
-          document.getElementById('statusesModal').style.display = 'none';
-        };
-      }
-    });
-    window.onclick = function(event) {
-      const modal = document.getElementById('statusesModal');
-      if (event.target === modal) {
-        modal.style.display = 'none';
-      }
-    }
-  </script>
-  <script>
+
     window.editStatus = function(id) {
       fetch('/api/statuses').then(r => r.json()).then(data => {
         const s = data.find(x => x.id === id);
         if (!s) return;
         document.getElementById('orderStatus').value = s.orderStatus;
-        document.getElementById('color').value = s.color;
-        var colorPreview = document.getElementById('colorPreview');
-        if (colorPreview) colorPreview.style.background = colorMap[s.color] || s.color;
+        document.getElementById('color').value = getColorByName(s.color);
         document.getElementById('description').value = s.description||'';
         document.getElementById('topContent').value = s.topContent||'';
         document.getElementById('bottomContent').value = s.bottomContent||'';
@@ -797,20 +872,23 @@
         document.getElementById('cancelEdit').style.display = '';
       });
     }
+    
     window.deleteStatus = function(id) {
       if (!confirm('Delete this status?')) return;
       fetch(`/api/statuses/${id}`, { method: 'DELETE' }).then(() => {
         fetchStatuses();
         showToast('Status deleted!');
+        fetchOrdersAndRender(); // Refresh orders
       });
     }
+
+    // Initialize everything
+    document.addEventListener('DOMContentLoaded', function() {
+      populateColorDropdown();
+      autoAssignColor();
+      fetchOrdersAndRender();
+      fetchStatuses();
+    });
   </script>
-  <div id="statusesModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:9999;align-items:center;justify-content:center;">
-    <div id="statusesModalContent" style="background:#fff;padding:32px 32px 24px 32px;border-radius:14px;min-width:320px;max-width:90vw;box-shadow:0 8px 32px #2225;position:relative;">
-      <button id="closeStatusesModal" style="position:absolute;top:16px;right:18px;font-size:22px;background:none;border:none;cursor:pointer;">&times;</button>
-      <h3 id="statusesModalTitle" style="margin-top:0;margin-bottom:18px;font-size:1.3rem;font-weight:600;text-align:center;"></h3>
-      <div id="statusesModalChips" style="display:flex;flex-wrap:wrap;gap:8px 10px;justify-content:center;"></div>
-    </div>
-  </div>
 </body>
 </html> 

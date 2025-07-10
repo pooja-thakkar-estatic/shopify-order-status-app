@@ -196,7 +196,7 @@ app.get('/api/orders', async (req, res) => {
     });
     res.json(ordersWithStatus);
   } catch (err) {
-    console.error('Fetch orders error:', err.response?.data || err);
+    console.error('Fetch orders error:', (err.response && err.response.data) || err);
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
