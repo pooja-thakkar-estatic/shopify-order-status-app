@@ -365,6 +365,7 @@
               <th>Date of Order</th>
               <th>Order Statuses</th>
               <th>Add Status</th>
+              <th>Save Status</th>
             </tr>
           </thead>
           <tbody id="orderLogBody"></tbody>
@@ -609,8 +610,7 @@
       const tbody = document.getElementById('orderLogBody');
       tbody.innerHTML = '';
       pagedOrders.forEach(order => {
-        const statusOptions = allStatuses.map(s => `<option value=\"${s.orderStatus}\">${s.orderStatus}</option>`).join('');
-        // Show all statuses as chips with remove button
+        const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
         let statusesBox = '';
         if (order.order_statuses && order.order_statuses.length > 0) {
           statusesBox = order.order_statuses.map(statusName => {
@@ -633,6 +633,8 @@
                 <option value="">Select Status</option>
                 ${statusOptions}
               </select>
+            </td>
+            <td>
               <button class="btn-save-status" onclick="saveOrderStatus('${order.id}')">Save</button>
             </td>
           </tr>

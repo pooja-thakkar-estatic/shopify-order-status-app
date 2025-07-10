@@ -23,6 +23,15 @@ function writeStatuses(statuses) {
   fs.writeFileSync(STATUSES_FILE, JSON.stringify(statuses, null, 2));
 }
 
+const ORDER_STATUSES_FILE = path.join(__dirname, 'order-statuses.json');
+function readOrderStatuses() {
+  if (!fs.existsSync(ORDER_STATUSES_FILE)) return {};
+  return JSON.parse(fs.readFileSync(ORDER_STATUSES_FILE, 'utf8'));
+}
+function writeOrderStatuses(data) {
+  fs.writeFileSync(ORDER_STATUSES_FILE, JSON.stringify(data, null, 2));
+}
+
 // Utility: get SMTP transporter
 function getTransporter() {
   return nodemailer.createTransport({
@@ -166,22 +175,13 @@ function shopifyRequest(method, endpoint, data) {
   });
 }
 
-// GET /api/orders - fetch all orders with custom status metafield and all details
+// GET /api/orders - fetch all orders and attach statuses from order-statuses.json
 app.get('/api/orders', async (req, res) => {
   try {
-    // Fetch orders (limit 50 for demo)
     const resp = await shopifyRequest('get', '/orders.json?limit=50&status=any');
     const orders = resp.data.orders;
-    // For each order, get custom status metafield (namespace: 'uniform7', key: 'order_statuses')
-    const ordersWithStatus = await Promise.all(orders.map(async (order) => {
-      let statusesArr = [];
-      try {
-        const metafieldsResp = await shopifyRequest('get', `/orders/${order.id}/metafields.json`);
-        const statusField = metafieldsResp.data.metafields.find(mf => mf.namespace === 'uniform7' && mf.key === 'order_statuses');
-        if (statusField) {
-          statusesArr = JSON.parse(statusField.value);
-        }
-      } catch (e) {}
+    const orderStatuses = readOrderStatuses();
+    const ordersWithStatus = orders.map(order => {
       return {
         id: order.id,
         name: order.name,
@@ -191,91 +191,37 @@ app.get('/api/orders', async (req, res) => {
         total_price: order.total_price,
         financial_status: order.financial_status,
         fulfillment_status: order.fulfillment_status,
-        tags: Array.isArray(order.tags) ? order.tags : (order.tags ? order.tags.split(',').map(t => t.trim()) : []),
-        line_items: order.line_items || [],
-        shipping_lines: order.shipping_lines || [],
-        source_name: order.source_name || '',
-        channel: order.source_name || '',
-        order_statuses: statusesArr,
+        order_statuses: orderStatuses[order.id] || [],
       };
-    }));
+    });
     res.json(ordersWithStatus);
   } catch (err) {
     console.error('Fetch orders error:', err.response?.data || err);
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
-
-// POST /api/orders/:id/status - append new status to order_statuses array and send email
-app.post('/api/orders/:id/status', async (req, res) => {
+// POST /api/orders/:id/status - add status to order-statuses.json
+app.post('/api/orders/:id/status', (req, res) => {
   const orderId = req.params.id;
   const { status } = req.body;
   if (!status) return res.status(400).json({ error: 'Missing status' });
-  try {
-    // Fetch existing statuses
-    let statusesArr = [];
-    try {
-      const metafieldsResp = await shopifyRequest('get', `/orders/${orderId}/metafields.json`);
-      const statusField = metafieldsResp.data.metafields.find(mf => mf.namespace === 'uniform7' && mf.key === 'order_statuses');
-      if (statusField) {
-        statusesArr = JSON.parse(statusField.value);
-      }
-    } catch (e) {}
-    // Add new status if not already present
-    if (!statusesArr.includes(status)) statusesArr.push(status);
-    // Save back as JSON string
-    await shopifyRequest('post', `/orders/${orderId}/metafields.json`, {
-      metafield: {
-        namespace: 'uniform7',
-        key: 'order_statuses',
-        value: JSON.stringify(statusesArr),
-        type: 'json_string',
-      }
-    });
-    // Fetch order details for email
-    const orderResp = await shopifyRequest('get', `/orders/${orderId}.json`);
-    const order = orderResp.data.order;
-    // Find status config
-    const statusConfig = findStatusByName(status);
-    if (statusConfig) {
-      // Send email to customer if enabled
-      if (statusConfig.emailCustomer && order.email) {
-        const html = orderStatusEmail({
-          orderNumber: order.name || order.order_number || order.id,
-          status: statusConfig.orderStatus,
-          topContent: statusConfig.topContent,
-          bottomContent: statusConfig.bottomContent
-        });
-        const transporter = getTransporter();
-        await transporter.sendMail({
-          from: process.env.EMAIL_FROM,
-          to: order.email,
-          subject: `Order Update - Order #${order.name || order.order_number || order.id}`,
-          html
-        });
-      }
-      // Send email to staff if enabled
-      if (statusConfig.emailStaff) {
-        const html = orderStatusEmail({
-          orderNumber: order.name || order.order_number || order.id,
-          status: statusConfig.orderStatus,
-          topContent: statusConfig.topContent,
-          bottomContent: statusConfig.bottomContent
-        });
-        const transporter = getTransporter();
-        await transporter.sendMail({
-          from: process.env.EMAIL_FROM,
-          to: statusConfig.emailStaff,
-          subject: `Order Status Changed (Staff) - Order #${order.name || order.order_number || order.id}`,
-          html
-        });
-      }
-    }
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Update status error:', err.response?.data || err);
-    res.status(500).json({ error: 'Failed to update status' });
+  const orderStatuses = readOrderStatuses();
+  if (!orderStatuses[orderId]) orderStatuses[orderId] = [];
+  if (!orderStatuses[orderId].includes(status)) orderStatuses[orderId].push(status);
+  writeOrderStatuses(orderStatuses);
+  res.json({ success: true });
+});
+// POST /api/orders/:id/status/remove - remove status from order-statuses.json
+app.post('/api/orders/:id/status/remove', (req, res) => {
+  const orderId = req.params.id;
+  const { status } = req.body;
+  if (!status) return res.status(400).json({ error: 'Missing status' });
+  const orderStatuses = readOrderStatuses();
+  if (orderStatuses[orderId]) {
+    orderStatuses[orderId] = orderStatuses[orderId].filter(s => s !== status);
+    writeOrderStatuses(orderStatuses);
   }
+  res.json({ success: true });
 });
 
 // Admin UI (simple HTML page)
