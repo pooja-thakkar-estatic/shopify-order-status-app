@@ -550,31 +550,23 @@
             if (statusesCell && statusesCell.querySelector('em')) {
               statusesCell.innerHTML = '';
             }
-            // Check if chip already exists
-            let statuses = statusesCell ? statusesCell.querySelectorAll('.status-chip') : [];
-            let alreadyExists = Array.from(statuses).some(chip => chip.textContent.trim().startsWith(status));
-            if (!alreadyExists && statusesCell) {
-              const statusObj = allStatuses.find(s => s.orderStatus === status);
+            // Get all chips (text)
+            let chips = Array.from(statusesCell.querySelectorAll('.status-chip')).map(chip => chip.textContent.trim().replace('×','').trim());
+            if (!chips.includes(status)) {
+              chips.push(status);
+            }
+            // Only show first 4 chips
+            const maxToShow = 4;
+            const chipsHtml = chips.slice(0, maxToShow).map(statusName => {
+              const statusObj = allStatuses.find(s => s.orderStatus === statusName);
               const color = statusObj ? colorMap[statusObj.color] : '#888';
-              const chip = document.createElement('span');
-              chip.className = 'status-chip';
-              chip.style.background = color;
-              chip.innerHTML = `${status} <button class='remove-chip' onclick="removeOrderStatus('${orderId}','${status}')">×</button>`;
-              statusesCell.appendChild(chip);
+              return `<span class='status-chip' style='background:${color};'>${statusName} <button class='remove-chip' onclick="removeOrderStatus('${orderId}','${statusName}')">×</button></span>`;
+            }).join('');
+            let viewAllLink = '';
+            if (chips.length > maxToShow) {
+              viewAllLink = `<a href='#' class='view-all-statuses' onclick="openStatusesModal('${orderId}')">View all statuses</a>`;
             }
-            // If more than 4 chips, show/hide the 'View all statuses' link
-            if (statusesCell) {
-              let chipsCount = statusesCell.querySelectorAll('.status-chip').length;
-              let viewAll = statusesCell.querySelector('.view-all-statuses');
-              if (chipsCount > 4 && !viewAll) {
-                const link = document.createElement('a');
-                link.href = '#';
-                link.className = 'view-all-statuses';
-                link.textContent = 'View all statuses';
-                link.onclick = function(e) { e.preventDefault(); openStatusesModal(orderId); };
-                statusesCell.appendChild(link);
-              }
-            }
+            statusesCell.innerHTML = chipsHtml + ' ' + viewAllLink;
           }
         } else {
           alert('Failed to update status: ' + (resp.error||''));
@@ -634,7 +626,7 @@
       const tbody = document.getElementById('orderLogBody');
       tbody.innerHTML = '';
       pagedOrders.forEach(order => {
-        const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
+        const statusOptions = allStatuses.map(s => `<option value=\"${s.orderStatus}\">${s.orderStatus}</option>`).join('');
         let statusesBox = '';
         if (order.order_statuses && order.order_statuses.length > 0) {
             const maxToShow = 4;
