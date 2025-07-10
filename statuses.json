@@ -56,7 +56,7 @@
     "description": "Order has been completed.",
     "topContent": "Your order is now complete.",
     "bottomContent": "Thank you for shopping with Uniform7!",
-    "emailCustomer": false,
+    "emailCustomer": true,
     "emailStaff": ""
   },
   {
