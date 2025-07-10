@@ -272,12 +272,13 @@
       padding: 4px 14px 4px 10px;
       border-radius: 16px;
       font-size: 14px;
-      margin-right: 6px;
+      margin: 4px 6px 4px 0;
       color: #fff;
       font-weight: 500;
-      margin-bottom: 4px;
       background: #bdbdbd;
       position: relative;
+      word-break: break-word;
+      white-space: pre-line;
     }
     .status-chip .remove-chip {
       margin-left: 8px;
@@ -326,6 +327,15 @@
     .status-log-table td .btn-save-status { margin-left: 0; }
     .status-log-table td .add-status-select, .status-log-table td .btn-save-status { margin-top: 0; }
     .status-log-table td .add-status-select, .status-log-table td .btn-save-status { margin-bottom: 0; }
+    .statuses-cell {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 6px;
+      min-height: 32px;
+      align-items: flex-start;
+      max-width: 320px;
+      word-break: break-word;
+    }
     @media (max-width: 900px) {
       .status-log-card { padding: 10px; }
       .status-log-table th, .status-log-table td { font-size: 13px; padding: 7px 5px; }
@@ -613,11 +623,12 @@
         const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
         let statusesBox = '';
         if (order.order_statuses && order.order_statuses.length > 0) {
-          statusesBox = order.order_statuses.map(statusName => {
-            const statusObj = allStatuses.find(s => s.orderStatus === statusName);
-            const color = statusObj ? colorMap[statusObj.color] : '#888';
-            return `<span class="status-chip" style="background:${color};">${statusName} <button class="remove-chip" onclick="removeOrderStatus('${order.id}','${statusName}')">×</button></span>`;
-          }).join('');
+            statusesBox = order.order_statuses.map(statusName => {
+              const statusObj = allStatuses.find(s => s.orderStatus === statusName);
+              const color = statusObj ? colorMap[statusObj.color] : '#888';
+              return `<span class="status-chip" style="background:${color};">${statusName} <button class="remove-chip" onclick="removeOrderStatus('${order.id}','${statusName}')">×</button></span>`;
+            }).join('');
+            statusesBox = `<div class="statuses-cell">${statusesBox}</div>`;
         } else {
           statusesBox = '<em>None</em>';
         }
