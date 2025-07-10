@@ -749,9 +749,12 @@
   </script>
   <script>
     window.openStatusesModal = function(orderId) {
-      // Close any open modal
-      document.getElementById('statusesModal').style.display = 'flex';
-      document.getElementById('statusesModalTitle').textContent = `Order ID: ${orderId}`;
+      var modal = document.getElementById('statusesModal');
+      var modalTitle = document.getElementById('statusesModalTitle');
+      var modalChips = document.getElementById('statusesModalChips');
+      if (!modal || !modalTitle || !modalChips) return;
+      modal.style.display = 'flex';
+      modalTitle.textContent = `Order ID: ${orderId}`;
       // Find the order in allOrders
       const order = (window.allOrders||[]).find(o => o.id == orderId);
       if (!order) return;
@@ -760,12 +763,16 @@
         const color = statusObj ? colorMap[statusObj.color] : '#888';
         return `<span class='status-chip' style='background:${color};margin-bottom:4px;'>${statusName} <button class='remove-chip' onclick=\"removeOrderStatus('${orderId}','${statusName}')\">×</button></span>`;
       }).join('');
-      document.getElementById('statusesModalChips').innerHTML = chips;
+      modalChips.innerHTML = chips;
     }
-    document.getElementById('closeStatusesModal').onclick = function() {
-      document.getElementById('statusesModal').style.display = 'none';
-    }
-    // Optional: close modal when clicking outside content
+    document.addEventListener('DOMContentLoaded', function() {
+      var closeBtn = document.getElementById('closeStatusesModal');
+      if (closeBtn) {
+        closeBtn.onclick = function() {
+          document.getElementById('statusesModal').style.display = 'none';
+        };
+      }
+    });
     window.onclick = function(event) {
       const modal = document.getElementById('statusesModal');
       if (event.target === modal) {
@@ -800,5 +807,12 @@
       });
     }
   </script>
+  <div id="statusesModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:9999;align-items:center;justify-content:center;">
+    <div id="statusesModalContent" style="background:#fff;padding:32px 32px 24px 32px;border-radius:14px;min-width:320px;max-width:90vw;box-shadow:0 8px 32px #2225;position:relative;">
+      <button id="closeStatusesModal" style="position:absolute;top:16px;right:18px;font-size:22px;background:none;border:none;cursor:pointer;">&times;</button>
+      <h3 id="statusesModalTitle" style="margin-top:0;margin-bottom:18px;font-size:1.3rem;font-weight:600;text-align:center;"></h3>
+      <div id="statusesModalChips" style="display:flex;flex-wrap:wrap;gap:8px 10px;justify-content:center;"></div>
+    </div>
+  </div>
 </body>
 </html> 
