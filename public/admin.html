@@ -286,10 +286,13 @@
     }
     .status-log-table td {
       padding: 12px 12px;
-      border-bottom: 1px solid #f3f3f3;
-      /*background: #fff;*/
+      border-bottom: 1px solid #d3c4c4;
+      /* background: #fff; */
       font-size: 15px;
       vertical-align: middle;
+      border-right: 1px solid #d3c4c4;
+      text-align: center;
+
     }
     .status-chip {
       display: inline-flex;
@@ -349,7 +352,7 @@
     .status-log-table td .btn-save-status { display: inline-block; }
     .status-log-table td .add-status-select { margin-right: 8px; }
     .status-log-table td .btn-save-status { margin-left: 0; }
-    .status-log-table td .add-status-select, .status-log-table td .btn-save-status { margin-top: 0; }
+    .status-log-table td .add-status-select, .status-log-table td .btn-save-status { margin-top: 0; border: 1px solid white;
     .status-log-table td .add-status-select, .status-log-table td .btn-save-status { margin-bottom: 0; }
     .statuses-cell {
       display: flex;
@@ -875,7 +878,7 @@
           (order.email && order.email.toLowerCase().includes(searchVal))
         )
       );
-      // Prepare CSV with all table columns in correct order and with safe headers
+      // Use headers with NO SPACES
       const header = [
         'Order_ID',
         'Customer_Name',
@@ -900,7 +903,6 @@
         ];
       });
       let csv = header.join(',') + '\n' + rows.map(r => r.map(x => '"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
-      // Download
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
