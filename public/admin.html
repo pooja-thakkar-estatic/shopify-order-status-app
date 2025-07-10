@@ -864,9 +864,10 @@
 
     // Export Orders as CSV
     document.getElementById('exportOrdersBtn').onclick = function() {
-      // Get currently displayed orders (after filtering/search)
+      // Use the same filter/search as the table
       const filterVal = document.getElementById('statusFilter').value;
       const searchVal = document.getElementById('orderSearch').value.toLowerCase();
+      // Use the same filtering logic as renderOrders
       let filtered = allOrders.filter(order =>
         (!filterVal || (order.order_statuses||[]).includes(filterVal)) &&
         (
@@ -876,16 +877,16 @@
           (order.email && order.email.toLowerCase().includes(searchVal))
         )
       );
-      // Prepare CSV with all table columns in correct order
+      // Prepare CSV with all table columns in correct order and with safe headers
       const header = [
-        'Order ID',
-        'Customer Name',
-        'Customer Email',
-        'Date of Order',
-        'Current Status',
-        'Financial Status',
-        'Fulfillment Status',
-        'Total Price'
+        'Order_ID',
+        'Customer_Name',
+        'Customer_Email',
+        'Date_of_Order',
+        'Current_Status',
+        'Financial_Status',
+        'Fulfillment_Status',
+        'Total_Price'
       ];
       const rows = filtered.map(order => {
         const currentStatus = order.order_statuses && order.order_statuses.length > 0 ? order.order_statuses[order.order_statuses.length-1] : '';
