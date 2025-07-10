@@ -576,11 +576,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         }).then(r => r.json()).then(() => {
-          fetchStatuses().then(() => {
-            resetForm();
-            showToast('Status updated!');
-            fetchOrdersAndRender();
-          });
+          fetchStatuses();
+          resetForm();
+          showToast('Status updated!');
+          fetchOrdersAndRender();
         });
       } else {
         fetch('/api/statuses', {
@@ -588,11 +587,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         }).then(r => r.json()).then(() => {
-          fetchStatuses().then(() => {
-            resetForm();
-            showToast('Status added!');
-            fetchOrdersAndRender();
-          });
+          fetchStatuses();
+          resetForm();
+          showToast('Status added!');
+          fetchOrdersAndRender();
         });
       }
     });
