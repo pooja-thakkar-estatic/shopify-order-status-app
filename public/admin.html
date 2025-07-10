@@ -230,6 +230,107 @@
     @media (max-width: 1100px) {
       #statusesTable { width: 100%; }
     }
+    .status-log-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px #e0e7ef;
+      padding: 32px 32px 24px 32px;
+      margin: 0 auto 32px auto;
+      max-width: 1200px;
+      border: 1.5px solid #f3f3f3;
+    }
+    .status-log-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 16px;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px #f3f3f3;
+    }
+    .status-log-table th {
+      background: #ffe082;
+      color: #222;
+      font-weight: 700;
+      text-align: left;
+      padding: 14px 12px;
+      font-size: 17px;
+      border-bottom: 2px solid #f3e5ab;
+    }
+    .status-log-table td {
+      padding: 12px 12px;
+      border-bottom: 1px solid #f3f3f3;
+      background: #fff;
+      font-size: 15px;
+      vertical-align: middle;
+    }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 14px 4px 10px;
+      border-radius: 16px;
+      font-size: 14px;
+      margin-right: 6px;
+      color: #fff;
+      font-weight: 500;
+      margin-bottom: 4px;
+      background: #bdbdbd;
+      position: relative;
+    }
+    .status-chip .remove-chip {
+      margin-left: 8px;
+      font-size: 15px;
+      color: #fff;
+      background: none;
+      border: none;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .status-chip .remove-chip:hover { opacity: 1; }
+    .add-status-select {
+      width: 180px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      border: 1.5px solid #e0e7ef;
+      font-size: 15px;
+      background: #f9f9f9;
+      margin-right: 0;
+    }
+    .btn-save-status {
+      background: #43a047;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 22px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-left: 10px;
+    }
+    .btn-save-status:disabled { background: #b2dfdb; cursor: not-allowed; }
+    .status-log-table tr:hover td { background: #f7fbe7; }
+    .status-log-table th, .status-log-table td { white-space: nowrap; }
+    .status-log-table th:first-child, .status-log-table td:first-child { border-radius: 12px 0 0 12px; }
+    .status-log-table th:last-child, .status-log-table td:last-child { border-radius: 0 12px 12px 0; }
+    .status-log-table td:last-child { text-align: right; }
+    .status-log-table td .add-status-select { margin-bottom: 0; }
+    .status-log-table td .btn-save-status { margin-bottom: 0; }
+    .status-log-table td .add-status-select, .status-log-table td .btn-save-status { vertical-align: middle; }
+    .status-log-table td .add-status-select { display: inline-block; }
+    .status-log-table td .btn-save-status { display: inline-block; }
+    .status-log-table td .add-status-select { margin-right: 8px; }
+    .status-log-table td .btn-save-status { margin-left: 0; }
+    .status-log-table td .add-status-select, .status-log-table td .btn-save-status { margin-top: 0; }
+    .status-log-table td .add-status-select, .status-log-table td .btn-save-status { margin-bottom: 0; }
+    @media (max-width: 900px) {
+      .status-log-card { padding: 10px; }
+      .status-log-table th, .status-log-table td { font-size: 13px; padding: 7px 5px; }
+      .add-status-select { width: 120px; font-size: 13px; }
+      .btn-save-status { font-size: 13px; padding: 6px 12px; }
+    }
   </style>
 </head>
 <body>
@@ -244,36 +345,30 @@
       <button class="tab-btn" id="tab-status-mgmt">Order Status Management</button>
     </div>
     <div id="tab-content-status-log" class="tab-content">
-      <h2>Status Log</h2>
-      <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 24px;">
-        <label for="statusFilter">Filter by Status: </label>
-        <select id="statusFilter">
-          <option value="">All</option>
-        </select>
-        <input type="text" id="orderSearch" placeholder="Search orders..." style="padding: 6px; width: 240px;" />
+      <div class="status-log-card">
+        <h2 style="margin-top:0;margin-bottom:18px;font-size:2rem;font-weight:700;letter-spacing:0.5px;"><span style="color:#1976d2;">Status</span> Log</h2>
+        <div style="margin-bottom: 18px; display: flex; align-items: center; gap: 24px;">
+          <label for="statusFilter">Filter by Status: </label>
+          <select id="statusFilter">
+            <option value="">All</option>
+          </select>
+          <input type="text" id="orderSearch" placeholder="Search orders..." style="padding: 6px; width: 240px;" />
+        </div>
+        <div style="overflow-x:auto; width:100%;">
+        <table class="status-log-table" id="orderLogTable">
+          <thead>
+            <tr>
+              <th>Orders</th>
+              <th>Customer Email</th>
+              <th>Order Statuses</th>
+              <th>Add Status</th>
+            </tr>
+          </thead>
+          <tbody id="orderLogBody"></tbody>
+        </table>
+        </div>
+        <div id="pagination" style="margin-top: 16px; text-align: right;"></div>
       </div>
-      <div style="overflow-x:auto; width:100%;">
-      <table id="orderLogTable">
-        <thead>
-          <tr>
-            <th>Order</th>
-            <th>Flags</th>
-            <th>Date</th>
-            <th>Customer</th>
-            <th>Total</th>
-            <th>Payment status</th>
-            <th>Fulfillment status</th>
-            <th>Items</th>
-            <th>Delivery method</th>
-            <th>Order Statuses</th>
-            <th>Add Status</th>
-            <th>Save</th>
-          </tr>
-        </thead>
-        <tbody id="orderLogBody"></tbody>
-      </table>
-      </div>
-      <div id="pagination" style="margin-top: 16px; text-align: right;"></div>
     </div>
     <div id="tab-content-status-mgmt" class="tab-content" style="display:none;">
       <h2>Order Status Management</h2>
@@ -483,37 +578,25 @@
       const tbody = document.getElementById('orderLogBody');
       tbody.innerHTML = '';
       pagedOrders.forEach(order => {
-        const statusOptions = allStatuses.map(s => `<option value=\"${s.orderStatus}\">${s.orderStatus}</option>`).join('');
-        const items = (order.line_items||order.items||[]).map(i => `${i.quantity}x ${i.title||i.name}`).join(', ');
-        // Show all statuses as chips
+        const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
+        // Show all statuses as chips with remove button
         const statusesBox = (order.order_statuses||[]).map(statusName => {
           const statusObj = allStatuses.find(s => s.orderStatus === statusName);
           const color = statusObj ? colorMap[statusObj.color] : '#888';
-          return `<span class=\"status-chip\" style=\"background:${color};\">${statusName}</span>`;
+          return `<span class=\"status-chip\" style=\"background:${color};\">${statusName} <button class=\"remove-chip\" onclick=\"removeOrderStatus('${order.id}','${statusName}')\">×</button></span>`;
         }).join('') || '<em>None</em>';
         tbody.innerHTML += `
           <tr>
             <td>${order.name||order.id}</td>
-            <td>${order.flags||''}</td>
-            <td>${order.created_at ? new Date(order.created_at).toLocaleString() : ''}</td>
-            <td>${order.customer||''}</td>
-            <td>${order.total_price||''}</td>
-            <td>${order.financial_status||order.payment_status||''}</td>
-            <td>${order.fulfillment_status||''}</td>
-            <td title="${items}">${items.length > 18 ? items.slice(0, 18) + '…' : items}</td>
+            <td>${order.email||''}</td>
+            <td>${statusesBox}</td>
             <td>
-              <select id="status-select-${order.id}">
+              <select class="add-status-select" id="status-select-${order.id}">
                 <option value="">Select Status</option>
                 ${statusOptions}
               </select>
+              <button class="btn-save-status" onclick="saveOrderStatus('${order.id}')">Save</button>
             </td>
-            <td>
-              <select id="status-select-${order.id}">
-                <option value="">Select Status</option>
-                ${statusOptions}
-              </select>
-            </td>
-            <td><button class="btn" onclick="saveOrderStatus('${order.id}')">Save</button></td>
           </tr>
         `;
       });
@@ -560,6 +643,23 @@
       }).catch(() => {
         sel.disabled = false;
         alert('Failed to update status');
+      });
+    }
+    window.removeOrderStatus = function(orderId, statusName) {
+      if (!confirm('Remove this status from order?')) return;
+      fetch(`/api/orders/${orderId}/status/remove`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: statusName })
+      }).then(r => r.json()).then(resp => {
+        if (resp.success) {
+          showToast('Status removed!');
+          fetchOrdersAndRender();
+        } else {
+          alert('Failed to remove status: ' + (resp.error||''));
+        }
+      }).catch(() => {
+        alert('Failed to remove status');
       });
     }
     // Initial fetch
