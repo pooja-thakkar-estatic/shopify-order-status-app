@@ -64,11 +64,10 @@ app.post('/api/statuses', (req, res) => {
   // Assign color automatically if not provided
   let assignedColor = color;
   if (!assignedColor) {
-    // 30 color palette (same as frontend)
+    // 20 carefully selected, visually distinct colors for order statuses
     const STATUS_COLORS = [
-      '#1976d2', '#388e3c', '#f57c00', '#d32f2f', '#7b1fa2', '#00796b', '#c2185b', '#5d4037', '#455a64', '#ff6f00',
-      '#2e7d32', '#c62828', '#1565c0', '#6a1b9a', '#00695c', '#ad1457', '#3e2723', '#263238', '#ff8f00', '#4caf50',
-      '#ff5722', '#9c27b0', '#00bcd4', '#ff9800', '#795548', '#607d8b', '#e91e63', '#3f51b5', '#009688', '#ffc107'
+      '#C6E7FF', '#D4F6FF', '#FBFBFB', '#FFDDAE', '#A2D2DF', '#F6EFBD', '#E4C087', '#BC7C7C', '#8E7AB5', '#B784B7',
+      '#E493B3', '#EEA5A6', '#EADFB4', '#9BB0C1', '#51829B', '#F6995C', '#FD8A8A', '#F1F7B5', '#A8D1D1', '#9EA1D4'
     ];
     const usedColors = statuses.map(s => s.color);
     assignedColor = STATUS_COLORS.find(c => !usedColors.includes(c)) || STATUS_COLORS[statuses.length % STATUS_COLORS.length];
