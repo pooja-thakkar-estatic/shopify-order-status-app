@@ -568,6 +568,11 @@
             }
             statusesCell.innerHTML = chipsHtml + ' ' + viewAllLink;
           }
+          let orderObj = window.allOrders.find(o => o.id == orderId);
+          if (orderObj) {
+            if (!orderObj.order_statuses) orderObj.order_statuses = [];
+            if (!orderObj.order_statuses.includes(status)) orderObj.order_statuses.push(status);
+          }
         } else {
           alert('Failed to update status: ' + (resp.error||''));
         }
@@ -678,6 +683,7 @@
         fetch('/api/orders').then(r => r.json()).then(orders => {
           allOrders = orders;
           renderOrders(allOrders);
+          
         });
       });
     }
