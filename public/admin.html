@@ -466,12 +466,14 @@
         });
       });
     }
+    // --- Fix resetForm to not error if colorPreview is missing ---
     function resetForm() {
       document.getElementById('statusForm').reset();
       document.getElementById('statusId').value = '';
       document.getElementById('saveBtn').textContent = 'Add Status';
       document.getElementById('cancelEdit').style.display = 'none';
-      document.getElementById('colorPreview').style.background = colorMap['red'];
+      var colorPreview = document.getElementById('colorPreview');
+      if (colorPreview) colorPreview.style.background = colorMap['red'];
     }
     document.getElementById('color').addEventListener('change', function() {
       document.getElementById('colorPreview').style.background = colorMap[this.value] || this.value;
@@ -514,6 +516,7 @@
     // --- Always show Save button ---
     document.getElementById('saveBtn').style.display = '';
     // --- Show selected status as colored chip after save ---
+    // --- Save status, send email, and update UI immediately ---
     window.saveOrderStatus = function(orderId) {
       const sel = document.getElementById(`status-select-${orderId}`);
       const status = sel.value;
@@ -527,6 +530,22 @@
         sel.disabled = false;
         if (resp.success) {
           showToast('Status updated and email sent!');
+          // Update UI immediately: add status chip to the row
+          const row = sel.closest('tr');
+          if (row) {
+            const statusesCell = row.querySelector('td:nth-child(5)');
+            let statuses = statusesCell.querySelectorAll('.status-chip');
+            let alreadyExists = Array.from(statuses).some(chip => chip.textContent.trim().startsWith(status));
+            if (!alreadyExists) {
+              const statusObj = allStatuses.find(s => s.orderStatus === status);
+              const color = statusObj ? colorMap[statusObj.color] : '#888';
+              const chip = document.createElement('span');
+              chip.className = 'status-chip';
+              chip.style.background = color;
+              chip.innerHTML = `${status} <button class='remove-chip' onclick=\"removeOrderStatus('${orderId}','${status}')\">×</button>`;
+              statusesCell.appendChild(chip);
+            }
+          }
           fetchOrdersAndRender();
         } else {
           alert('Failed to update status: ' + (resp.error||''));
