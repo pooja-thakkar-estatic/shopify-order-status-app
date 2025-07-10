@@ -545,24 +545,37 @@
           // Update UI immediately: add status chip to the row
           const row = sel.closest('tr');
           if (row) {
-            const statusesCell = row.querySelector('td:nth-child(5)');
+            const statusesCell = row.querySelector('.statuses-cell');
             // Remove 'None' if present
-            if (statusesCell.querySelector('em')) {
+            if (statusesCell && statusesCell.querySelector('em')) {
               statusesCell.innerHTML = '';
             }
-            let statuses = statusesCell.querySelectorAll('.status-chip');
+            // Check if chip already exists
+            let statuses = statusesCell ? statusesCell.querySelectorAll('.status-chip') : [];
             let alreadyExists = Array.from(statuses).some(chip => chip.textContent.trim().startsWith(status));
-            if (!alreadyExists) {
+            if (!alreadyExists && statusesCell) {
               const statusObj = allStatuses.find(s => s.orderStatus === status);
               const color = statusObj ? colorMap[statusObj.color] : '#888';
               const chip = document.createElement('span');
               chip.className = 'status-chip';
               chip.style.background = color;
-              chip.innerHTML = `${status} <button class='remove-chip' onclick=\"removeOrderStatus('${orderId}','${status}')\">×</button>`;
+              chip.innerHTML = `${status} <button class='remove-chip' onclick="removeOrderStatus('${orderId}','${status}')">×</button>`;
               statusesCell.appendChild(chip);
             }
+            // If more than 4 chips, show/hide the 'View all statuses' link
+            if (statusesCell) {
+              let chipsCount = statusesCell.querySelectorAll('.status-chip').length;
+              let viewAll = statusesCell.querySelector('.view-all-statuses');
+              if (chipsCount > 4 && !viewAll) {
+                const link = document.createElement('a');
+                link.href = '#';
+                link.className = 'view-all-statuses';
+                link.textContent = 'View all statuses';
+                link.onclick = function(e) { e.preventDefault(); openStatusesModal(orderId); };
+                statusesCell.appendChild(link);
+              }
+            }
           }
-          // Do NOT call fetchOrdersAndRender here, so chips stay visible
         } else {
           alert('Failed to update status: ' + (resp.error||''));
         }
@@ -632,18 +645,12 @@
             }).join('');
             let viewAllLink = '';
             if (order.order_statuses.length > maxToShow) {
-              viewAllLink = `<a href="#" class="view-all-statuses" onclick="toggleAllStatuses('${order.id}')">View all statuses</a>`;
+              viewAllLink = `<a href="#" class="view-all-statuses" onclick="openStatusesModal('${order.id}')">View all statuses</a>`;
             }
-            // Hidden all-statuses dropdown
-            const allChips = order.order_statuses.map(statusName => {
-              const statusObj = allStatuses.find(s => s.orderStatus === statusName);
-              const color = statusObj ? colorMap[statusObj.color] : '#888';
-              return `<span class="status-chip" style="background:${color};margin-bottom:4px;">${statusName} <button class="remove-chip" onclick="removeOrderStatus('${order.id}','${statusName}')">×</button></span>`;
-            }).join('');
-            statusesBox = `<div class="statuses-cell">${chips} ${viewAllLink}<div id="all-statuses-${order.id}" class="all-statuses-dropdown" style="display:none;position:absolute;z-index:10;background:#fff;border:1px solid #eee;padding:10px 12px;border-radius:8px;box-shadow:0 2px 8px #ccc;margin-top:8px;">${allChips}</div></div>`;
-        } else {
-          statusesBox = '<em>None</em>';
-        }
+            statusesBox = `<div class="statuses-cell">${chips} ${viewAllLink}</div>`;
+          } else {
+            statusesBox = '<em>None</em>';
+          }
         tbody.innerHTML += `
           <tr>
             <td>${order.name||order.id}</td>
@@ -741,10 +748,29 @@
     }
   </script>
   <script>
-    window.toggleAllStatuses = function(orderId) {
-      const el = document.getElementById(`all-statuses-${orderId}`);
-      if (!el) return;
-      el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+    window.openStatusesModal = function(orderId) {
+      // Close any open modal
+      document.getElementById('statusesModal').style.display = 'flex';
+      document.getElementById('statusesModalTitle').textContent = `Order ID: ${orderId}`;
+      // Find the order in allOrders
+      const order = (window.allOrders||[]).find(o => o.id == orderId);
+      if (!order) return;
+      const chips = (order.order_statuses||[]).map(statusName => {
+        const statusObj = allStatuses.find(s => s.orderStatus === statusName);
+        const color = statusObj ? colorMap[statusObj.color] : '#888';
+        return `<span class='status-chip' style='background:${color};margin-bottom:4px;'>${statusName} <button class='remove-chip' onclick=\"removeOrderStatus('${orderId}','${statusName}')\">×</button></span>`;
+      }).join('');
+      document.getElementById('statusesModalChips').innerHTML = chips;
+    }
+    document.getElementById('closeStatusesModal').onclick = function() {
+      document.getElementById('statusesModal').style.display = 'none';
+    }
+    // Optional: close modal when clicking outside content
+    window.onclick = function(event) {
+      const modal = document.getElementById('statusesModal');
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
     }
   </script>
   <script>
