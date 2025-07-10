@@ -659,7 +659,7 @@
             orderObj.order_statuses = [status]; // Only keep the current status
           }
         } else {
-          alert('Failed to update status: ' + (resp.error||''));
+          //alert('Failed to update status: ' + (resp.error||''));
         }
       }).catch(() => {
         sel.disabled = false;
@@ -903,7 +903,7 @@
           (order.email && order.email.toLowerCase().includes(searchVal))
         )
       );
-      // Prepare CSV with all table columns
+      // Prepare CSV with all table columns in correct order
       const header = [
         'Order ID',
         'Customer Name',
@@ -917,7 +917,7 @@
       const rows = filtered.map(order => {
         const currentStatus = order.order_statuses && order.order_statuses.length > 0 ? order.order_statuses[order.order_statuses.length-1] : '';
         return [
-          order.name || order.id,
+          order.id || order.name,
           order.customer_name || order.customer || '',
           order.email || '',
           order.created_at ? new Date(order.created_at).toLocaleDateString() : '',
