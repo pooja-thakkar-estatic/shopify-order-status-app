@@ -266,6 +266,12 @@ app.post('/api/orders/:orderId/status', async (req, res) => {
             bottomContent: statusObj.bottomContent
           });
           const transporter = getTransporter();
+          console.log('Preparing to send customer email. SMTP config:', {
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            user: process.env.SMTP_USER,
+            from: process.env.EMAIL_FROM
+          });
           console.log('Sending customer email to:', orderEmail);
           await transporter.sendMail({
             from: process.env.EMAIL_FROM,
@@ -293,6 +299,12 @@ app.post('/api/orders/:orderId/status', async (req, res) => {
             bottomContent: statusObj.bottomContent
           });
           const transporter = getTransporter();
+          console.log('Preparing to send staff email. SMTP config:', {
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            user: process.env.SMTP_USER,
+            from: process.env.EMAIL_FROM
+          });
           console.log('Sending staff email to:', statusObj.emailStaff);
           await transporter.sendMail({
             from: process.env.EMAIL_FROM,
