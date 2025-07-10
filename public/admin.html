@@ -635,11 +635,11 @@
             orderObj.order_statuses = [status]; // Only keep the current status
           }
         } else {
-          alert('Failed to update status: ' + (resp.error || ''));
+          //alert('Failed to update status: ' + (resp.error || ''));
         }
       }).catch(() => {
         sel.disabled = false;
-        alert('Failed to update status');
+        //alert('Failed to update status');
       });
     }
 
