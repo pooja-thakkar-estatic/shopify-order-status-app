@@ -213,6 +213,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 120px;
+      border: 1.5px solid #e0e0e0;
     }
     #statusesTable th {
       background: #fafbfc;
@@ -475,6 +476,7 @@
     document.getElementById('color').addEventListener('change', function() {
       document.getElementById('colorPreview').style.background = colorMap[this.value] || this.value;
     });
+    // --- Fix Edit/Add Status Form Logic ---
     document.getElementById('statusForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const id = document.getElementById('statusId').value;
@@ -492,141 +494,26 @@
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        }).then(fetchStatuses);
+        }).then(r => r.json()).then(() => {
+          fetchStatuses();
+          resetForm();
+          showToast('Status updated!');
+        });
       } else {
         fetch('/api/statuses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        }).then(fetchStatuses);
-      }
-      resetForm();
-    });
-    window.editStatus = function(id) {
-      fetch('/api/statuses').then(r => r.json()).then(data => {
-        const s = data.find(x => x.id === id);
-        if (!s) return;
-        document.getElementById('orderStatus').value = s.orderStatus;
-        document.getElementById('color').value = s.color;
-        document.getElementById('colorPreview').style.background = colorMap[s.color] || s.color;
-        document.getElementById('description').value = s.description||'';
-        document.getElementById('topContent').value = s.topContent||'';
-        document.getElementById('bottomContent').value = s.bottomContent||'';
-        document.getElementById('emailCustomer').checked = !!s.emailCustomer;
-        document.getElementById('emailStaff').value = s.emailStaff||'';
-        document.getElementById('statusId').value = s.id;
-        document.getElementById('saveBtn').textContent = 'Update Status';
-        document.getElementById('cancelEdit').style.display = '';
-      });
-    }
-    window.deleteStatus = function(id) {
-      if (!confirm('Delete this status?')) return;
-      fetch(`/api/statuses/${id}`, { method: 'DELETE' }).then(fetchStatuses);
-    }
-    document.getElementById('cancelEdit').onclick = resetForm;
-    fetchStatuses();
-
-    // --- ORDER STATUS LOG SECTION ---
-    // Add after status management
-    // HTML for order log
-    // const orderLogSection = document.createElement('div');
-    // orderLogSection.innerHTML = `
-    //   <h2>Status Log</h2>
-    //   <table id="orderLogTable">
-    //     <thead>
-    //       <tr>
-    //         <th>Order #</th>
-    //         <th>Customer Email</th>
-    //         <th>Customer Name</th>
-    //         <th>Current Status</th>
-    //         <th>Add Status</th>
-    //         <th>Save</th>
-    //       </tr>
-    //     </thead>
-    //     <tbody id="orderLogBody"></tbody>
-    //   </table>
-    // `;
-    // document.body.appendChild(orderLogSection);
-
-    let allStatuses = [];
-    function fetchAllStatuses() {
-      return fetch('/api/statuses').then(r => r.json()).then(data => {
-        allStatuses = data;
-        return data;
-      });
-    }
-    let allOrders = [];
-    let currentPage = 1;
-    const pageSize = 20;
-    function populateStatusFilter() {
-      const filter = document.getElementById('statusFilter');
-      filter.innerHTML = '<option value="">All</option>' + allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
-    }
-    function renderOrders(orders) {
-      const filterVal = document.getElementById('statusFilter').value;
-      const searchVal = document.getElementById('orderSearch').value.toLowerCase();
-      let filtered = orders.filter(order =>
-        (!filterVal || (order.order_statuses||[]).includes(filterVal)) &&
-        (
-          !searchVal ||
-          (order.name && order.name.toLowerCase().includes(searchVal)) ||
-          (order.customer && order.customer.toLowerCase().includes(searchVal)) ||
-          (order.email && order.email.toLowerCase().includes(searchVal))
-        )
-      );
-      const totalPages = Math.ceil(filtered.length / pageSize);
-      if (currentPage > totalPages) currentPage = totalPages || 1;
-      const pagedOrders = filtered.slice((currentPage-1)*pageSize, currentPage*pageSize);
-      const tbody = document.getElementById('orderLogBody');
-      tbody.innerHTML = '';
-      pagedOrders.forEach(order => {
-        const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
-        // Show all statuses as chips with remove button
-        const statusesBox = (order.order_statuses||[]).map(statusName => {
-          const statusObj = allStatuses.find(s => s.orderStatus === statusName);
-          const color = statusObj ? colorMap[statusObj.color] : '#888';
-          return `<span class=\"status-chip\" style=\"background:${color};\">${statusName} <button class=\"remove-chip\" onclick=\"removeOrderStatus('${order.id}','${statusName}')\">×</button></span>`;
-        }).join('') || '<em>None</em>';
-        tbody.innerHTML += `
-          <tr>
-            <td>${order.name||order.id}</td>
-            <td>${order.customer_name||order.customer||''}</td>
-            <td>${order.email||''}</td>
-            <td>${order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}</td>
-            <td>${statusesBox}</td>
-            <td>
-              <select class="add-status-select" id="status-select-${order.id}">
-                <option value="">Select Status</option>
-                ${statusOptions}
-              </select>
-              <button class="btn-save-status" onclick="saveOrderStatus('${order.id}')">Save</button>
-            </td>
-          </tr>
-        `;
-      });
-      // Pagination controls
-      const pagination = document.getElementById('pagination');
-      pagination.innerHTML = '';
-      if (totalPages > 1) {
-        pagination.innerHTML =
-          `<button onclick=\"prevPage()\" ${currentPage===1?'disabled':''}>Prev</button> ` +
-          `Page ${currentPage} of ${totalPages} ` +
-          `<button onclick=\"nextPage()\" ${currentPage===totalPages?'disabled':''}>Next</button>`;
-      }
-    }
-    function fetchOrdersAndRender() {
-      fetchAllStatuses().then(() => {
-        populateStatusFilter();
-        fetch('/api/orders').then(r => r.json()).then(orders => {
-          allOrders = orders;
-          renderOrders(allOrders);
+        }).then(r => r.json()).then(() => {
+          fetchStatuses();
+          resetForm();
+          showToast('Status added!');
         });
-      });
-    }
-    function prevPage() { if (currentPage > 1) { currentPage--; renderOrders(allOrders); } }
-    function nextPage() { const totalPages = Math.ceil(allOrders.length / pageSize); if (currentPage < totalPages) { currentPage++; renderOrders(allOrders); } }
-    document.getElementById('statusFilter').onchange = function() { currentPage = 1; renderOrders(allOrders); };
-    document.getElementById('orderSearch').oninput = function() { currentPage = 1; renderOrders(allOrders); };
+      }
+    });
+    // --- Always show Save button ---
+    document.getElementById('saveBtn').style.display = '';
+    // --- Show selected status as colored chip after save ---
     window.saveOrderStatus = function(orderId) {
       const sel = document.getElementById(`status-select-${orderId}`);
       const status = sel.value;
@@ -698,19 +585,24 @@
         toast.style.right = '32px';
         toast.style.zIndex = '9999';
         toast.style.minWidth = '220px';
-        toast.style.padding = '14px 28px';
-        toast.style.background = '#222';
+        toast.style.padding = '16px 32px 16px 24px';
+        toast.style.background = '#1976d2';
         toast.style.color = '#fff';
-        toast.style.borderRadius = '8px';
-        toast.style.boxShadow = '0 2px 8px #2228';
-        toast.style.opacity = '0.97';
-        toast.style.fontSize = '16px';
-        toast.style.pointerEvents = 'none';
+        toast.style.borderRadius = '12px';
+        toast.style.boxShadow = '0 4px 24px #1976d255';
+        toast.style.opacity = '0.98';
+        toast.style.fontSize = '17px';
+        toast.style.fontWeight = '500';
+        toast.style.display = 'flex';
+        toast.style.alignItems = 'center';
+        toast.style.gap = '18px';
+        toast.innerHTML = `<span id='toast-msg'></span><button id='toast-close' style='background:none;border:none;color:#fff;font-size:22px;cursor:pointer;margin-left:12px;'>&times;</button>`;
         document.body.appendChild(toast);
+        document.getElementById('toast-close').onclick = function() { toast.style.display = 'none'; };
       }
-      toast.textContent = msg;
-      toast.style.display = 'block';
-      setTimeout(() => { toast.style.display = 'none'; }, 2500);
+      document.getElementById('toast-msg').textContent = msg;
+      toast.style.display = 'flex';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
     }
   </script>
 </body>
