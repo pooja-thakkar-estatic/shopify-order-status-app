@@ -200,17 +200,7 @@ app.get('/api/orders', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
-// POST /api/orders/:id/status - add status to order-statuses.json
-app.post('/api/orders/:id/status', (req, res) => {
-  const orderId = req.params.id;
-  const { status } = req.body;
-  if (!status) return res.status(400).json({ error: 'Missing status' });
-  const orderStatuses = readOrderStatuses();
-  if (!orderStatuses[orderId]) orderStatuses[orderId] = [];
-  if (!orderStatuses[orderId].includes(status)) orderStatuses[orderId].push(status);
-  writeOrderStatuses(orderStatuses);
-  res.json({ success: true });
-});
+// POST /api/orders/:id/status - add status to order-statuses.json (REMOVED - using new endpoint below)
 // POST /api/orders/:id/status/remove - remove status from order-statuses.json
 app.post('/api/orders/:id/status/remove', (req, res) => {
   const orderId = req.params.id;
@@ -222,6 +212,7 @@ app.post('/api/orders/:id/status/remove', (req, res) => {
 
 // PATCH/POST order status update endpoint
 app.post('/api/orders/:orderId/status', async (req, res) => {
+  console.log('=== STATUS UPDATE ENDPOINT HIT ===');
   const orderId = req.params.orderId;
   const { status } = req.body;
   console.log('Received status update for order:', orderId, 'status:', status);
