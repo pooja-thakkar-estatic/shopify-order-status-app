@@ -224,6 +224,33 @@ app.post('/api/orders/:id/status/remove', (req, res) => {
   res.json({ success: true });
 });
 
+// PATCH/POST order status update endpoint
+app.post('/api/orders/:orderId/status', (req, res) => {
+  const orderId = req.params.orderId;
+  const { status } = req.body;
+  if (!status) return res.status(400).json({ error: 'Missing status' });
+  const orderStatuses = readOrderStatuses();
+  if (!orderStatuses[orderId]) orderStatuses[orderId] = [];
+  orderStatuses[orderId] = [status]; // Only keep the last status
+  writeOrderStatuses(orderStatuses);
+  // Try to send email, but don't fail if it errors
+  try {
+    const order = { id: orderId };
+    const statusObj = findStatusByName(status);
+    if (statusObj && statusObj.emailCustomer) {
+      // You may want to fetch the order email here if needed
+      // send email logic...
+    }
+    if (statusObj && statusObj.emailStaff) {
+      // send staff email logic...
+    }
+  } catch (e) {
+    console.error('Email error:', e);
+    // Don't fail the request
+  }
+  res.json({ success: true });
+});
+
 // Admin UI (simple HTML page)
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';

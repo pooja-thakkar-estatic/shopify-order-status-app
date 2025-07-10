@@ -462,8 +462,7 @@
     </div>
   </div>
   
-  <!-- Include the colors file -->
-  <script src="../colors.js"></script>
+  <!-- Remove colors.js script, all color logic is in main script -->
   
   <script>
     // 30 carefully selected colors for order statuses
@@ -755,7 +754,12 @@
           </div>`;
           
           rowClass += ' status-colored';
-          rowStyle = `border-left-color: ${color}; background-color: ${color}10;`;
+          // If status is 'Order Completed', use strong green
+          if (currentStatus === 'Order Completed') {
+            rowStyle = `background-color: #4caf50; color: #fff; border-left-color: #388e3c;`;
+          } else {
+            rowStyle = `background-color: ${color}; color: #fff; border-left-color: ${color};`;
+          }
         } else {
           statusesBox = '<em>None</em>';
         }
