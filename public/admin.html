@@ -576,10 +576,11 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         }).then(r => r.json()).then(() => {
-          fetchStatuses();
-          resetForm();
-          showToast('Status updated!');
-          fetchOrdersAndRender(); // Refresh orders to update colors
+          fetchStatuses().then(() => {
+            resetForm();
+            showToast('Status updated!');
+            fetchOrdersAndRender();
+          });
         });
       } else {
         fetch('/api/statuses', {
@@ -587,10 +588,11 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         }).then(r => r.json()).then(() => {
-          fetchStatuses();
-          resetForm();
-          showToast('Status added!');
-          fetchOrdersAndRender(); // Refresh orders to update colors
+          fetchStatuses().then(() => {
+            resetForm();
+            showToast('Status added!');
+            fetchOrdersAndRender();
+          });
         });
       }
     });
