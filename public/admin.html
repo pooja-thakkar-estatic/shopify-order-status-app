@@ -194,15 +194,12 @@
     .btn:disabled { background: #b3d1ff; cursor: not-allowed; }
     .actions button { margin-right: 6px; }
     #statusesTable {
-      width: 955px;
-      margin: 0 auto;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto 32px auto;
       border-collapse: separate;
       border-spacing: 0;
-      font-size: 15px;
-      background: #fff;
-      box-shadow: 0 2px 8px #eee;
-      border-radius: 8px;
-      overflow: hidden;
+      overflow-x: auto;
     }
     #statusesTable th, #statusesTable td {
       padding: 8px 10px;
@@ -214,12 +211,14 @@
       text-overflow: ellipsis;
       max-width: 120px;
       border: 1.5px solid #e0e0e0;
+      position: relative;
     }
     #statusesTable th {
       background: #fafbfc;
       font-weight: 600;
       color: #222;
       text-align: center;
+      z-index: 1;
     }
     #statusesTable tr:nth-child(even) { background: #fcfcfc; }
     #statusesTable tr:hover { background: #f4f8fb; }
@@ -227,6 +226,8 @@
       display: flex;
       gap: 8px;
       justify-content: center;
+      flex-wrap: wrap;
+      min-width: 120px;
     }
     @media (max-width: 1100px) {
       #statusesTable { width: 100%; }
@@ -623,12 +624,23 @@
         const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
         let statusesBox = '';
         if (order.order_statuses && order.order_statuses.length > 0) {
-            statusesBox = order.order_statuses.map(statusName => {
+            const maxToShow = 4;
+            const chips = order.order_statuses.slice(0, maxToShow).map(statusName => {
               const statusObj = allStatuses.find(s => s.orderStatus === statusName);
               const color = statusObj ? colorMap[statusObj.color] : '#888';
               return `<span class="status-chip" style="background:${color};">${statusName} <button class="remove-chip" onclick="removeOrderStatus('${order.id}','${statusName}')">×</button></span>`;
             }).join('');
-            statusesBox = `<div class="statuses-cell">${statusesBox}</div>`;
+            let viewAllLink = '';
+            if (order.order_statuses.length > maxToShow) {
+              viewAllLink = `<a href="#" class="view-all-statuses" onclick="toggleAllStatuses('${order.id}')">View all statuses</a>`;
+            }
+            // Hidden all-statuses dropdown
+            const allChips = order.order_statuses.map(statusName => {
+              const statusObj = allStatuses.find(s => s.orderStatus === statusName);
+              const color = statusObj ? colorMap[statusObj.color] : '#888';
+              return `<span class="status-chip" style="background:${color};margin-bottom:4px;">${statusName} <button class="remove-chip" onclick="removeOrderStatus('${order.id}','${statusName}')">×</button></span>`;
+            }).join('');
+            statusesBox = `<div class="statuses-cell">${chips} ${viewAllLink}<div id="all-statuses-${order.id}" class="all-statuses-dropdown" style="display:none;position:absolute;z-index:10;background:#fff;border:1px solid #eee;padding:10px 12px;border-radius:8px;box-shadow:0 2px 8px #ccc;margin-top:8px;">${allChips}</div></div>`;
         } else {
           statusesBox = '<em>None</em>';
         }
@@ -726,6 +738,40 @@
       document.getElementById('toast-msg').textContent = msg;
       toast.style.display = 'flex';
       setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+  </script>
+  <script>
+    window.toggleAllStatuses = function(orderId) {
+      const el = document.getElementById(`all-statuses-${orderId}`);
+      if (!el) return;
+      el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+    }
+  </script>
+  <script>
+    window.editStatus = function(id) {
+      fetch('/api/statuses').then(r => r.json()).then(data => {
+        const s = data.find(x => x.id === id);
+        if (!s) return;
+        document.getElementById('orderStatus').value = s.orderStatus;
+        document.getElementById('color').value = s.color;
+        var colorPreview = document.getElementById('colorPreview');
+        if (colorPreview) colorPreview.style.background = colorMap[s.color] || s.color;
+        document.getElementById('description').value = s.description||'';
+        document.getElementById('topContent').value = s.topContent||'';
+        document.getElementById('bottomContent').value = s.bottomContent||'';
+        document.getElementById('emailCustomer').checked = !!s.emailCustomer;
+        document.getElementById('emailStaff').value = s.emailStaff||'';
+        document.getElementById('statusId').value = s.id;
+        document.getElementById('saveBtn').textContent = 'Update Status';
+        document.getElementById('cancelEdit').style.display = '';
+      });
+    }
+    window.deleteStatus = function(id) {
+      if (!confirm('Delete this status?')) return;
+      fetch(`/api/statuses/${id}`, { method: 'DELETE' }).then(() => {
+        fetchStatuses();
+        showToast('Status deleted!');
+      });
     }
   </script>
 </body>
