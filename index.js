@@ -214,13 +214,9 @@ app.post('/api/orders/:id/status', (req, res) => {
 // POST /api/orders/:id/status/remove - remove status from order-statuses.json
 app.post('/api/orders/:id/status/remove', (req, res) => {
   const orderId = req.params.id;
-  const { status } = req.body;
-  if (!status) return res.status(400).json({ error: 'Missing status' });
   const orderStatuses = readOrderStatuses();
-  if (orderStatuses[orderId]) {
-    orderStatuses[orderId] = orderStatuses[orderId].filter(s => s !== status);
-    writeOrderStatuses(orderStatuses);
-  }
+  orderStatuses[orderId] = []; // Clear all statuses for this order
+  writeOrderStatuses(orderStatuses);
   res.json({ success: true });
 });
 

@@ -338,7 +338,6 @@
       margin-left: 10px;
     }
     .btn-save-status:disabled { background: #b2dfdb; cursor: not-allowed; }
-    .status-log-table tr:hover td { background: #f7fbe7; }
     .status-log-table th, .status-log-table td { white-space: nowrap; }
     .status-log-table th:first-child, .status-log-table td:first-child { border-radius: 12px 0 0 12px; }
     .status-log-table th:last-child, .status-log-table td:last-child { border-radius: 0 12px 12px 0; }
@@ -384,6 +383,7 @@
             <option value="">All</option>
           </select>
           <input type="text" id="orderSearch" placeholder="Search orders..." style="padding: 6px; width: 240px;" />
+          <button id="exportOrdersBtn" class="btn" style="background:#43a047; color:#fff; margin-left:auto;">Export Orders</button>
         </div>
         <div style="overflow-x:auto; width:100%;">
         <table class="status-log-table" id="orderLogTable">
@@ -885,6 +885,45 @@
         fetchOrdersAndRender(); // Refresh orders
       });
     }
+
+    // Export Orders as CSV
+    document.getElementById('exportOrdersBtn').onclick = function() {
+      // Get currently displayed orders (after filtering/search)
+      const filterVal = document.getElementById('statusFilter').value;
+      const searchVal = document.getElementById('orderSearch').value.toLowerCase();
+      let filtered = allOrders.filter(order =>
+        (!filterVal || (order.order_statuses||[]).includes(filterVal)) &&
+        (
+          !searchVal ||
+          (order.name && order.name.toLowerCase().includes(searchVal)) ||
+          (order.customer && order.customer.toLowerCase().includes(searchVal)) ||
+          (order.email && order.email.toLowerCase().includes(searchVal))
+        )
+      );
+      // Prepare CSV
+      const header = ['Order ID','Customer Name','Customer Email','Date of Order','Current Status'];
+      const rows = filtered.map(order => {
+        const currentStatus = order.order_statuses && order.order_statuses.length > 0 ? order.order_statuses[order.order_statuses.length-1] : '';
+        return [
+          order.name||order.id,
+          order.customer_name||order.customer||'',
+          order.email||'',
+          order.created_at ? new Date(order.created_at).toLocaleDateString() : '',
+          currentStatus||''
+        ];
+      });
+      let csv = header.join(',') + '\n' + rows.map(r => r.map(x => '"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'orders_export.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
 
     // Initialize everything
     document.addEventListener('DOMContentLoaded', function() {
