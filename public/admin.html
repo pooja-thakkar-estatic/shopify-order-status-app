@@ -723,23 +723,20 @@
       
       pagedOrders.forEach(order => {
         const statusOptions = allStatuses.map(s => `<option value="${s.orderStatus}">${s.orderStatus}</option>`).join('');
-        
         // Get current status (last one in the array)
         const currentStatus = order.order_statuses && order.order_statuses.length > 0 
           ? order.order_statuses[order.order_statuses.length - 1] 
           : null;
-        
         let statusesBox = '';
         let rowStyle = '';
         let rowClass = 'order-row';
-        
-        if (currentStatus) {
-          const statusObj = allStatuses.find(s => s.orderStatus === currentStatus);
-          const color = statusObj ? getColorByName(statusObj.color) : '#888';
+        // Check if currentStatus exists in allStatuses
+        const statusObj = allStatuses.find(s => s.orderStatus === currentStatus);
+        if (currentStatus && statusObj) {
+          const color = getColorByName(statusObj.color);
           statusesBox = `<div class="statuses-cell">
             <span class="status-chip" style="background:${color};">${currentStatus} <button class="remove-chip" onclick="removeOrderStatus('${order.id}','${currentStatus}')">×</button></span>
           </div>`;
-          
           rowClass += ' status-colored';
           // If status is 'Order Completed', use strong green
           if (currentStatus === 'Order Completed') {
@@ -748,7 +745,9 @@
             rowStyle = `background-color: ${color}; color: #fff; border-left-color: ${color};`;
           }
         } else {
+          // Status is None or was deleted
           statusesBox = '<em>None</em>';
+          rowStyle = 'background-color: #fff; color: #222; border-left-color: #fff;';
         }
         
         tbody.innerHTML += `
