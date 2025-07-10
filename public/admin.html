@@ -346,10 +346,10 @@
 </head>
 <body>
   <!-- SMTP Error Note -->
-  <div class="note-box" id="smtpNote">
+  <!-- <div class="note-box" id="smtpNote">
     <button class="close-note" onclick="document.getElementById('smtpNote').style.display='none'">&times;</button>
     <b>Note:</b> If you see <code>553 Relaying disallowed</code> errors, ensure <b>EMAIL_FROM</b> matches your SMTP user email exactly in your environment variables. For Gmail, use your Gmail address and an App Password.
-  </div>
+  </div> -->
   <div class="main-content">
     <div class="tabs">
       <button class="tab-btn active" id="tab-status-log">Status Log</button>
@@ -676,6 +676,7 @@
     document.getElementById('orderSearch').oninput = function() { currentPage = 1; renderOrders(allOrders); };
     // Initial fetch
     fetchOrdersAndRender();
+    fetchStatuses();
     // Optionally, refresh every few minutes
     // setInterval(fetchOrdersAndRender, 5*60*1000);
 
@@ -692,6 +693,7 @@
       document.getElementById('tab-status-log').classList.remove('active');
       document.getElementById('tab-content-status-mgmt').style.display = '';
       document.getElementById('tab-content-status-log').style.display = 'none';
+      fetchStatuses();
     };
 
     // Toast notification
