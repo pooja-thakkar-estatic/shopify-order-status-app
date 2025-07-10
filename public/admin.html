@@ -640,16 +640,19 @@
             const statusesCell = row.querySelector('.statuses-cell');
             const statusObj = allStatuses.find(s => s.orderStatus === status);
             const color = statusObj ? getColorByName(statusObj.color) : '#888';
-            
             // Show only the current status (last selected)
             statusesCell.innerHTML = `<span class='status-chip' style='background:${color};'>${status} <button class='remove-chip' onclick="removeOrderStatus('${orderId}','${status}')">×</button></span>`;
-            
-            // Update row background color
-            row.className = 'order-row status-colored';
-            row.style.borderLeftColor = color;
-            row.style.backgroundColor = color + '10'; // Light background
+            // Update row background color and text color instantly
+            if (status === 'Order Completed') {
+              row.style.backgroundColor = '#4caf50';
+              row.style.color = '#fff';
+              row.style.borderLeftColor = '#388e3c';
+            } else {
+              row.style.backgroundColor = color;
+              row.style.color = '#fff';
+              row.style.borderLeftColor = color;
+            }
           }
-          
           // Update order object
           let orderObj = window.allOrders.find(o => o.id == orderId);
           if (orderObj) {
@@ -900,16 +903,28 @@
           (order.email && order.email.toLowerCase().includes(searchVal))
         )
       );
-      // Prepare CSV
-      const header = ['Order ID','Customer Name','Customer Email','Date of Order','Current Status'];
+      // Prepare CSV with all table columns
+      const header = [
+        'Order ID',
+        'Customer Name',
+        'Customer Email',
+        'Date of Order',
+        'Current Status',
+        'Financial Status',
+        'Fulfillment Status',
+        'Total Price'
+      ];
       const rows = filtered.map(order => {
         const currentStatus = order.order_statuses && order.order_statuses.length > 0 ? order.order_statuses[order.order_statuses.length-1] : '';
         return [
-          order.name||order.id,
-          order.customer_name||order.customer||'',
-          order.email||'',
+          order.name || order.id,
+          order.customer_name || order.customer || '',
+          order.email || '',
           order.created_at ? new Date(order.created_at).toLocaleDateString() : '',
-          currentStatus||''
+          currentStatus || '',
+          order.financial_status || '',
+          order.fulfillment_status || '',
+          order.total_price || ''
         ];
       });
       let csv = header.join(',') + '\n' + rows.map(r => r.map(x => '"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
