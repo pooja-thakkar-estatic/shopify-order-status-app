@@ -94,6 +94,7 @@ app.put('/api/statuses/:id', (req, res) => {
   let statuses = readStatuses();
   const idx = statuses.findIndex(s => s.id === id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  const oldStatusName = statuses[idx].orderStatus;
   statuses[idx].orderStatus = orderStatus || statuses[idx].orderStatus;
   statuses[idx].color = color || statuses[idx].color;
   statuses[idx].description = description !== undefined ? description : statuses[idx].description;
@@ -102,6 +103,16 @@ app.put('/api/statuses/:id', (req, res) => {
   statuses[idx].emailCustomer = emailCustomer !== undefined ? !!emailCustomer : statuses[idx].emailCustomer;
   statuses[idx].emailStaff = emailStaff !== undefined ? emailStaff : statuses[idx].emailStaff;
   writeStatuses(statuses);
+  // Update all orders that reference the old status name
+  if (orderStatus && orderStatus !== oldStatusName) {
+    let orderStatuses = readOrderStatuses();
+    for (const orderId in orderStatuses) {
+      if (Array.isArray(orderStatuses[orderId])) {
+        orderStatuses[orderId] = orderStatuses[orderId].map(s => s === oldStatusName ? orderStatus : s);
+      }
+    }
+    writeOrderStatuses(orderStatuses);
+  }
   res.json(statuses[idx]);
 });
 
