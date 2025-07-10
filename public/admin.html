@@ -558,7 +558,7 @@
       e.preventDefault();
       const id = document.getElementById('statusId').value;
       const orderStatus = document.getElementById('orderStatus').value.trim();
-      const color = document.getElementById('color').value;
+      // const color = document.getElementById('color').value; // REMOVED
       const description = document.getElementById('description').value.trim();
       const topContent = document.getElementById('topContent').value.trim();
       const bottomContent = document.getElementById('bottomContent').value.trim();
@@ -567,7 +567,8 @@
       
       if (!orderStatus) return alert('Order status required');
       
-      const payload = { orderStatus, color, description, topContent, bottomContent, emailCustomer, emailStaff };
+      // Remove color from payload
+      const payload = { orderStatus, description, topContent, bottomContent, emailCustomer, emailStaff };
       
       if (id) {
         fetch(`/api/statuses/${id}`, {
@@ -844,7 +845,7 @@
         const s = data.find(x => x.id === id);
         if (!s) return;
         document.getElementById('orderStatus').value = s.orderStatus;
-        document.getElementById('color').value = getColorByName(s.color);
+        // document.getElementById('color').value = getColorByName(s.color); // REMOVED
         document.getElementById('description').value = s.description||'';
         document.getElementById('topContent').value = s.topContent||'';
         document.getElementById('bottomContent').value = s.bottomContent||'';
